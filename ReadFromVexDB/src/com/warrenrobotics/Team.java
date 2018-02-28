@@ -1,7 +1,16 @@
 package com.warrenrobotics;
 	
 import org.json.*;
-
+/**
+ * This class allows for team statistics to be parsed and stored. Current
+ * statistics include average OPR, average DPR, average CCWM, average max 
+ * score, average rank(from all tournaments), and best rank(from one tournament).
+ * 
+ * @author Robert Engle | WHS Robotics | Team 90241B
+ * @version 1.0
+ * @since 2018-02-21
+ *
+ */
 public class Team {
 	//Instance variables
 	public String name;
