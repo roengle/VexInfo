@@ -2,9 +2,9 @@ package com.warrenrobotics;
 
 import org.json.*;
 
+import java.nio.charset.Charset;
 import java.net.URL;
 import java.io.*;
-import java.nio.charset.*;
 import java.util.*;
 /**
  * This part of the program is able to take team names(IE: 90241B) and parse stats from 
@@ -133,10 +133,6 @@ public class TeamAPI {
 	 }
 	  
 	public static void main(String[] args) throws Exception{
-		extractTeamListFromCSV("C:/Sheet.csv");
-		for(int i = 0; i < teamNames.size(); i ++) {
-			printTeamStats(teamNames.get(i));
-		}
+		
 	}
-
 }
