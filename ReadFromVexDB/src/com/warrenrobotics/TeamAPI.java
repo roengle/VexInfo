@@ -1,138 +1,136 @@
 package com.warrenrobotics;
 
+import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.auth.oauth2.TokenResponseException;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.ValueRange;
+import com.google.api.services.sqladmin.SQLAdmin;
+import com.google.api.services.sqladmin.SQLAdminScopes;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.util.Collections;
+
 import org.json.*;
 
-import java.nio.charset.Charset;
-import java.net.URL;
-import java.io.*;
-import java.util.*;
 /**
- * This part of the program is able to take team names(IE: 90241B) and parse stats from 
- * selected team, such as average OPR, 
+ * Interacts with Google Sheets using the Google Sheets API v4 to automatically take 
+ * team names and assign certain statistics to them(stats are acquired from VexDB)
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
- * @version 1.0
+ * @version 1.1
  * @since 2018-02-21
  *
  */
 public class TeamAPI {
-
-	static Map<String, Team> teamMappings = new HashMap<>();
-	static List<String> teamNames = new ArrayList<>();
+	//Instance variables
+	private String spreadsheetId; 
+	private String range;
+	private String valueRenderOption;
+	private String dateTimeRenderOption;
+	private String refreshToken;
+	private String accessToken;
+	private String scope;
+	private ValueRange response;
 	
 	/**
-	 * Reads all letters from a reader and returns a string of these. Is currently 
-	 * a work-around for some bugs involving readers and outputs
+	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
 	 * 
-	 * @param rd The reader to extrapolate a string from
-	 * @return the whole string outputted from the reader
-	 * @throws IOException
+	 * @param spreadsheetId the id of the spreadsheet(commonly found in the link of the spreadsheet)
+	 * @param valueRenderOption how values are represented in output. Default is FORMATTED_VALUE
+	 * @param accessToken The oauth2 access token obtained from the OAuth 2.0 Playground
+	 * @param scope the scope of data allowed access for the end user. Since we are plan on editing and reading spreadsheets, 
+	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
-	private static String readAll(Reader rd) throws IOException {
-	    StringBuilder sb = new StringBuilder();
-	    int cp;
-	    while ((cp = rd.read()) != -1) {
-	      sb.append((char) cp);
-	    }
-	    return sb.toString();
-	  }
+	public TeamAPI(String spreadsheetId, String valueRenderOption, String refreshToken, String scope) throws IOException, GeneralSecurityException{
+		this.spreadsheetId = spreadsheetId;
+		this.range = "Sheet1";
+		this.valueRenderOption = valueRenderOption;
+		this.dateTimeRenderOption = "SERIAL_NUMBER";
+		this.refreshToken = refreshToken;
+		this.scope = scope;
+		//Assign access token
+		setAccessToken();
+		//Create sheet service and request data using it
+		Sheets sheetsService = createSheetsService();
+		Sheets.Spreadsheets.Values.Get request =
+		    sheetsService.spreadsheets().values().get(this.spreadsheetId, this.range);
+		    request.setValueRenderOption(this.valueRenderOption);
+		    request.setDateTimeRenderOption(this.dateTimeRenderOption);
+		this.response = request.execute();
+		//Process into team list
+		String[] teamList = processResponseIntoTeamList();
+		//Loop through each name, grab statistics, and 
+	}
 	
 	/**
-	 * Creates a JSON object by reading a url that contains a JSON output, in this case 
-	 * the URL is from the VexDB.io API
+	 * Creates a sheets service that can be used to make a request for data
 	 * 
-	 * @param url the url that has the JSON output
-	 * @return a JSONObject created from a JSON output from desired URL
+	 * @return a Sheets object that can be used to grab data
 	 * @throws IOException
-	 * @throws JSONException
+	 * @throws GeneralSecurityException
 	 */
-	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
-	   InputStream is = new URL(url).openStream();
-	   try {
-		   BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-		   String jsonText = readAll(rd);
-		   JSONObject json = new JSONObject(jsonText);
-		   return json;
-	   } finally {
-		   is.close();
-	   }
+	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
+		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+	    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+	    GoogleCredential credential = new GoogleCredential().setAccessToken(this.accessToken);
+	    
+	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
+	        .setApplicationName(this.scope)
+	        .build();
 	}
 	
-	 /**
-	  * Parses a team and its stats into the teams list
-	  * 
-	  * @param teamName the name the of team(IE: 90241B)
-	  * @throws IOException
-	  */
-	 public static void parseTeam(String teamName) throws IOException{
-		 //Construct link for lookup
-		 StringBuilder sb = new StringBuilder();
-		 sb.append("https://api.vexdb.io/v1/get_rankings?team=" + teamName + "&season=In%20The%20Zone");
-		 String link = sb.toString();
-		 //Crease JSONObject
-		 JSONObject teamJson = readJsonFromUrl(link);
-		 //Create respective results array
-		 JSONArray teamResults = teamJson.getJSONArray("result");
-		 //Put the team into hashmap
-		 teamMappings.put(teamName,new Team(teamName, teamResults));
-	 }
-	 
-	 /**
-	  * Prints the statistics for a select team. Statistics include average OPR, average DPR,
-	  * average CCWM, average max score, best ranking(in one tournament), and average ranking
-	  * (all tournaments)
-	  * 
-	  * @param teamName the name of the team(IE: 90241B)
-	  */
-	 public static void printTeamStats(String teamName) {
-		 //Assign team
-		 Team t1 = teamMappings.get(teamName);
-		 //Print out team name
-		 System.out.println(t1.name);
-		 //Print out statistics, each with a tab in front
-		 System.out.println("\tAVG OPR:" + t1.getAvgOPR());
-		 System.out.println("\tAVG DPR:" + t1.getAvgDPR());
-		 System.out.println("\tAVG CCWM:" + t1.getAvgCCWM());
-		 System.out.println("\tAVG Max Score:" + t1.getAvgMaxScore());
-		 System.out.println("\tBest Rank(season):" + t1.getBestRank());
-		 System.out.println("\tAverage Rank(season):" + t1.getAvgRank());
-	 }
-	 
-	 /**
-	  * Takes a CSV list and extracts the team names. Note that team names should be in the first row.
-	  * 
-	  * TODO:Eventually make a method to read actual excel files, and soon make a method to be able to work with
-	  * google sheets
-	  * 
-	  * @param filePath the path of the CSV file(IE: "C:/Sheet.csv")
-	  */
-	 public static void extractTeamListFromCSV(String filePath){
-		 try {
-			 //Construct buffered reader for comma-separated list
-			 BufferedReader br = new BufferedReader(new FileReader(filePath));
-			 //Skip first line
-			 br.readLine();
-			 //Set up input String
-			 String input;
-			 //Read until at end of file, assigning input string to line read from BufferedReader
-			 while((input = br.readLine()) != null){
-				 //Split with commas
-				 String[] inputSplit = input.split(",");
-				 //Since only getting team names is important, get the first element
-				 teamNames.add(inputSplit[0]);
-			 }
-			 //Loop through all the team names and parse into program
-			 for(int i = 0; i < teamNames.size(); i++){
-				 parseTeam(teamNames.get(i));
-			 }
-			 //Close reader
-			 br.close();
-		 } catch(Exception e) {
-			 e.printStackTrace();
-		 }
-	 }
-	  
-	public static void main(String[] args) throws Exception{
-		
+	/**
+	 * Retrieves an access token using the refresh token
+	 * 
+	 * @return an access token that can be used to create a proper credential
+	 */
+	public void setAccessToken() throws IOException, GeneralSecurityException{
+		//TODO: Add implementation so I don't have to put my own data here
+		String clientId = "";
+		String clientSecret = "";
+		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
+				this.refreshToken, clientId, clientSecret).execute();
+		this.accessToken = response.getAccessToken();
+		   
 	}
+	
+	/**
+	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])
+	 * 
+	 * @return the team names as an array of strings
+	 */
+	public String[] processResponseIntoTeamList() {
+		String responseStr = this.response.toString();
+		JSONObject json = new JSONObject(responseStr);
+		JSONArray values = json.getJSONArray("values");
+		String[] teams = new String[values.length()];
+		//Start at index 1 to ignore top of row(which shows "Team")
+		for(int i = 1; i < values.length(); i++) {
+			teams[i] = values.getJSONArray(i).getString(0);
+		}
+		return teams;
+	}
+	
+	/**
+	 * Returns the ValueRange response as a String
+	 * 
+	 * @return a string of the request response
+	 */
+	public String getResponse() { return this.response.toString(); }
+	/**
+	 * Retrieves the current access token provided by setAccessToken()
+	 * 
+	 * @return an access token allowing access to a sheet
+	 */
+	public String getAccessToken() { return this.accessToken; }
+	
 }
