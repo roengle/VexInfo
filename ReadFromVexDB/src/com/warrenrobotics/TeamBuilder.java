@@ -42,6 +42,7 @@ public class TeamBuilder {
 		 return new Team(teamName, tArray_rankings, tData_events, tArray_season_rankings, tArray_skills);
 		 
 	 }
+	 
 	 /**
 	  * Creates a JSON object by reading a url that contains a JSON output, in this case 
 	  * the URL is from the VexDB.io API
@@ -79,6 +80,4 @@ public class TeamBuilder {
 	    }
 	    return sb.toString();
 	  }
-	
-	
 }

@@ -31,15 +31,17 @@ public class Team {
 	public int avgSP;
 	public int avgTRSP;
 	//Data - Events
-	private int numEvents;
+	public int numEvents;
 	//Data - Season Rankings
 	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to guage a team
 	   A higher vrating represents a better team
 	*/
-	private int vrating_rank;
-	private double vrating;
+	public int vrating_rank;
+	public double vrating;
 	//Data - Skills
-	//TODO: Fill in skills fields
+	public int avgSkillsScore_robot;
+	public int avgSkillsScore_auton;
+	public int avgSkillsScore_combined;
 	/**
 	 * Constructs a Team object and runs all necessary calculations to compile statisics
 	 * 

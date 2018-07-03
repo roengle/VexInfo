@@ -99,8 +99,7 @@ public class TeamAPI {
 		String clientSecret = "";
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
 				this.refreshToken, clientId, clientSecret).execute();
-		this.accessToken = response.getAccessToken();
-		   
+		this.accessToken = response.getAccessToken();   
 	}
 	
 	/**
