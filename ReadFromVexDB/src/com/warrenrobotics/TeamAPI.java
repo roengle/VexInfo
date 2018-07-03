@@ -14,7 +14,9 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdminScopes;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
@@ -94,11 +96,28 @@ public class TeamAPI {
 	 * @return an access token that can be used to create a proper credential
 	 */
 	public void setAccessToken() throws IOException, GeneralSecurityException{
-		//TODO: Add implementation so I don't have to put my own data here
-		String clientId = "";
-		String clientSecret = "";
+		//Initialize OAuth Credential strings
+		String clientId;
+		String clientSecret;
+		/*
+		 * Note to uses who plan to use this:
+		 * 
+		 * Create a txt file named "OAuth2Credentials.txt" (or anything you like and change the filepath below)
+		 * Inside the text file, on the first line put only the OAuth2 client ID,
+		 * and on the second line put only the OAuth2 client secret.
+		 */
+		String filePath = "\\src\\com\\warrenrobotics\\OAuth2Credentials.txt";
+		BufferedReader br = new BufferedReader(new FileReader(filePath));
+		//Set client id to first line
+		clientId = br.readLine();
+		//Set client secret to second line
+		clientSecret = br.readLine();
+		//Don't leak resources
+		br.close();
+		//Create a token response using refresh token and oauth credentials
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
 				this.refreshToken, clientId, clientSecret).execute();
+		//Set the access token as the response
 		this.accessToken = response.getAccessToken();   
 	}
 	
