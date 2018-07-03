@@ -8,7 +8,9 @@ import java.nio.charset.Charset;
 import java.util.*;
 /**
  * This part of the program is able to take team names(IE: 90241B) and parse stats from 
- * selected team, such as average OPR, 
+ * selected team, for example average OPR. 
+ * 
+ * This class is responsible for reading data from VexDB and creating Team objects.
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.1

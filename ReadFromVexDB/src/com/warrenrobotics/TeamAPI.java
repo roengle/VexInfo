@@ -25,7 +25,9 @@ import org.json.*;
 
 /**
  * Interacts with Google Sheets using the Google Sheets API v4 to automatically take 
- * team names and assign certain statistics to them(stats are acquired from VexDB)
+ * team names and assign certain statistics to them.
+ * 
+ * This class is responsible for all interactions with Google Sheets.
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.1
@@ -48,8 +50,8 @@ public class TeamAPI {
 	 * 
 	 * @param spreadsheetId the id of the spreadsheet(commonly found in the link of the spreadsheet)
 	 * @param valueRenderOption how values are represented in output. Default is FORMATTED_VALUE
-	 * @param accessToken The oauth2 access token obtained from the OAuth 2.0 Playground
-	 * @param scope the scope of data allowed access for the end user. Since we are plan on editing and reading spreadsheets, 
+	 * @param accessToken the oauth2 access token obtained from the OAuth 2.0 Playground
+	 * @param scope the scope of data allowed access for the end user. Since we are planning on editing and reading spreadsheets, 
 	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
 	public TeamAPI(String spreadsheetId, String valueRenderOption, String refreshToken, String scope) throws IOException, GeneralSecurityException{
@@ -106,7 +108,7 @@ public class TeamAPI {
 		 * Inside the text file, on the first line put only the OAuth2 client ID,
 		 * and on the second line put only the OAuth2 client secret.
 		 */
-		String filePath = "\\src\\com\\warrenrobotics\\OAuth2Credentials.txt";
+		String filePath = "src\\com\\warrenrobotics\\OAuth2Credentials.txt";
 		BufferedReader br = new BufferedReader(new FileReader(filePath));
 		//Set client id to first line
 		clientId = br.readLine();
@@ -126,7 +128,7 @@ public class TeamAPI {
 	 * 
 	 * @return the team names as an array of strings
 	 */
-	public String[] processResponseIntoTeamList() {
+	private String[] processResponseIntoTeamList() {
 		String responseStr = this.response.toString();
 		JSONObject json = new JSONObject(responseStr);
 		JSONArray values = json.getJSONArray("values");
