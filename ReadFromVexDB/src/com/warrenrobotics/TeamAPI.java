@@ -10,6 +10,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.api.services.sqladmin.SQLAdmin;
 import com.google.api.services.sqladmin.SQLAdminScopes;
@@ -19,7 +20,9 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.json.*;
 
@@ -44,6 +47,7 @@ public class TeamAPI {
 	private String accessToken;
 	private String scope;
 	private ValueRange response;
+	public String[] teamList;
 	
 	/**
 	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
@@ -54,10 +58,10 @@ public class TeamAPI {
 	 * @param scope the scope of data allowed access for the end user. Since we are planning on editing and reading spreadsheets, 
 	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
-	public TeamAPI(String spreadsheetId, String valueRenderOption, String refreshToken, String scope) throws IOException, GeneralSecurityException{
+	public TeamAPI(String spreadsheetId, String refreshToken, String scope) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
 		this.range = "Sheet1";
-		this.valueRenderOption = valueRenderOption;
+		this.valueRenderOption = "FORMATTED_VALUE";
 		this.dateTimeRenderOption = "SERIAL_NUMBER";
 		this.refreshToken = refreshToken;
 		this.scope = scope;
@@ -65,14 +69,12 @@ public class TeamAPI {
 		setAccessToken();
 		//Create sheet service and request data using it
 		Sheets sheetsService = createSheetsService();
-		Sheets.Spreadsheets.Values.Get request =
-		    sheetsService.spreadsheets().values().get(this.spreadsheetId, this.range);
-		    request.setValueRenderOption(this.valueRenderOption);
-		    request.setDateTimeRenderOption(this.dateTimeRenderOption);
-		this.response = request.execute();
+		//Execute a sheets.get request
+		executeGetRequest(sheetsService);
 		//Process into team list
-		String[] teamList = processResponseIntoTeamList();
-		//Loop through each name, grab statistics, and 
+		processResponseIntoTeamList();
+		executeWriteRequest(sheetsService);
+		
 	}
 	
 	/**
@@ -102,9 +104,11 @@ public class TeamAPI {
 		String clientId;
 		String clientSecret;
 		/*
-		 * Note to uses who plan to use this:
+		 * Note to users who plan to use this:
 		 * 
-		 * Create a txt file named "OAuth2Credentials.txt" (or anything you like and change the filepath below)
+		 * Create a txt file named "OAuth2Credentials.txt" (or anything you like and change the variable "filepath" below)
+		 * in the current working directory(or change "filepath" below)
+		 * 
 		 * Inside the text file, on the first line put only the OAuth2 client ID,
 		 * and on the second line put only the OAuth2 client secret.
 		 */
@@ -128,17 +132,99 @@ public class TeamAPI {
 	 * 
 	 * @return the team names as an array of strings
 	 */
-	private String[] processResponseIntoTeamList() {
+	private void processResponseIntoTeamList() {
+		//Build string from ValueRange
 		String responseStr = this.response.toString();
+		//Build a json object from the string
 		JSONObject json = new JSONObject(responseStr);
+		//Build a json array from the "values" section
 		JSONArray values = json.getJSONArray("values");
-		String[] teams = new String[values.length()];
+		//Make an array of strings for team names. Is length - 1 since the first iteration of values doesn't contain a team
+		String[] teams = new String[values.length() - 1];
 		//Start at index 1 to ignore top of row(which shows "Team")
 		for(int i = 1; i < values.length(); i++) {
-			teams[i] = values.getJSONArray(i).getString(0);
+			//Must input at i - 1 since array starts at 0 still
+			teams[i - 1] = values.getJSONArray(i).getString(0);
 		}
-		return teams;
+		//Set the class team list
+		this.teamList = teams;
 	}
+	
+	private void buildValues(String[] arr, Team t) {
+		/*
+		 * For each time, write in this specific order:
+		 * 
+		 * avgOPR, avgDPR, avgCCWM, avgAP, avgSP, avgTSRP, vratingRank, vrating, avgRank, avgSkills_robot,
+		 * avgSkills_auton, avgSkills_combined, avgMaxScore, totalEvents
+		*/
+		arr[0] = Double.toString(t.getAvgOPR());
+		arr[1] = Double.toString(t.getAvgDPR());
+		arr[2] = Double.toString(t.getAvgCCWM());
+		arr[3] = Integer.toString(t.getAvgAP());
+		arr[4] = Integer.toString(t.getAvgSP());
+		arr[5] = Integer.toString(t.getAvgTRSP());
+		arr[6] = Integer.toString(t.getvrating_rank());
+		arr[7] = Double.toString(t.getvrating());
+		arr[8] = Integer.toString(t.getAvgRank());
+		arr[9] = Integer.toString(t.getAvgSkillsScore_robot());
+		arr[10] = Integer.toString(t.getAvgSkillsScore_auton());
+		arr[11] = Integer.toString(t.getAvgSkillsScore_combined());
+		arr[12] = Integer.toString(t.getAvgMaxScore());
+		arr[13] = Integer.toString(t.getNumEvents());
+	}
+	
+	public void executeGetRequest(Sheets sheetsService) throws IOException{
+		//Setup a request for getting spreadsheet data
+		Sheets.Spreadsheets.Values.Get request =
+		    sheetsService.spreadsheets().values().get(this.spreadsheetId, this.range);
+		    request.setValueRenderOption(this.valueRenderOption);
+		    request.setDateTimeRenderOption(this.dateTimeRenderOption);
+		//Get a response as a ValueRange(which can converted to JSON Objects)
+		this.response = request.execute();
+	}
+	
+	public void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
+		//Write data for a team into spreadsheet
+		/*
+		 * For each time, write in this specific order:
+		 * 
+		 * avgOPR, avgDPR, avgCCWM, avgAP, avgSP, avgTSRP, vratingRank, vrating, avgRank, avgSkills_robot,
+		 * avgSkills_auton, 
+		*/
+		for(int i = 0; i < teamList.length; i++) {
+			//Grab team name
+			String s = teamList[i];
+			//Parse into team object
+			Team t = TeamBuilder.parseTeam(s);
+			//Initialize array for inputting data
+			String[] valuesArr = new String[14];
+			//Build array with proper data
+			buildValues(valuesArr, t);
+			//Configure body for input
+			List<List<Object>> values = Arrays.asList(Arrays.asList(valuesArr));
+			//Configure body as a ValueRange object
+			ValueRange body = new ValueRange().setValues(values);
+			//Configure range as Sheet1!F#:S# where # is a number based on the current team-(i+2)
+			String range = "Sheet1!F" + (i + 2) + ":S" + (i+2);
+			//Send write request and receive response
+			UpdateValuesResponse result = 
+					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
+					.setValueInputOption("USER_ENTERED")
+					.execute();
+			//Print out success message
+			System.out.println("#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + result.getUpdatedCells() + " cells updated)");
+			//Wait 1 second(fix for quota)
+			Thread.sleep(1000);
+		}
+		System.out.println("SUCCESSFUL WRITE - " + teamList.length + " TEAMS ACQUIRED");
+	}
+	/*
+	------------------------------------------------------------------------------------------
+	//																						//
+	//									   GETTER METHODS								    //
+	//																						//
+	------------------------------------------------------------------------------------------
+	*/
 	
 	/**
 	 * Returns the ValueRange response as a String
@@ -153,4 +239,9 @@ public class TeamAPI {
 	 */
 	public String getAccessToken() { return this.accessToken; }
 	
+	/**
+	 * Retrieves the current team list provided by proccessResponseIntoTeamList()
+	 * @return
+	 */
+	public String[] getTeamList() { return this.teamList; }
 }

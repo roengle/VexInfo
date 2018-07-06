@@ -127,7 +127,7 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+	//TODO: Add indicators for blank fields
 	/**
 	 * Calculates the average OPR and sets the classes instance variable to it
 	 */
@@ -141,8 +141,16 @@ public class Team {
 			//Add to total
 			totalOPR += opr;
 		}
-		
-		this.avgOPR = (totalOPR + 0.0) / tData_rankings.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgOPR = (totalOPR + 0.0) / tData_rankings.length();
+		}else {
+			//If zero, set to 0. In the future, add something to indicate a 
+			//blank field and report it so the spreadsheet can show that.
+			this.avgOPR = 0.0;
+		}
 	}
 	
 	/**
@@ -159,7 +167,14 @@ public class Team {
 			totalDPR += dpr;
 		}
 		//Compute average
-		this.avgDPR = (totalDPR + 0.0) / tData_rankings.length();
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgDPR = (totalDPR + 0.0) / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgDPR = 0.0;
+		}
 	}
 	
 	/**
@@ -175,8 +190,14 @@ public class Team {
 			//Add to total
 			totalCCWM += ccwm;
 		}
-		//Compute average
-		this.avgCCWM = (totalCCWM + 0.0) / tData_rankings.length();
+		//Avoid ArithmeticException by checking if divisor is 0
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgCCWM = (totalCCWM + 0.0) / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgCCWM = 0.0;
+		}
 	}
 	
 	/**
@@ -193,40 +214,41 @@ public class Team {
 			totalScore += maxScore;
 		}
 		//Compute average
-		this.avgMaxScore = (int)totalScore / tData_rankings.length();
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgMaxScore = (int)totalScore / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgMaxScore = 0;
+		}
 	}
 	
 	/**
 	 * Parses through the teams ranks, and sets both the highest ranking and the 
 	 * average ranking.
-	 * 
-	 * NOTE:Best ranking WON'T appear in spreadsheet
 	 */
 	private void calculateRanks(){
 		//Initialize total for average
 		int totalRank = 0;
-		int bestSoFar;
 		/* Break up array, and search though each ranking. For the average, follow
-		 * the same procedure above. For best rank, simply set the first rank as the 
-		 * best and do comparisons to find the LEAST value.
+		 * the same procedure above. 
 		 */
-		//Set the best-so-far ranking as a reference, this will allow for the least
-		//value to be set at the end(even if it is the first)
-		bestSoFar = tData_rankings.getJSONObject(0).getInt("rank");
 		for(int i = 0; i < tData_rankings.length(); i++) {
 			//Grab value
 			int rank = tData_rankings.getJSONObject(i).getInt("rank");
-			//Make comparison for ranking
-			if(rank < bestSoFar) {
-				bestSoFar = rank;
-			}
 			//Add to total
 			totalRank += rank;
 		}
-		//Set best rank
-		this.bestRank = bestSoFar;
-		//Set average rank
-		this.avgRank = (int)totalRank/tData_rankings.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgRank = (int)totalRank / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgRank = 0;
+		}
 	}
 	
 	/**
@@ -242,8 +264,16 @@ public class Team {
 			//Add to total
 			totalAP += AP;
 		}
-		//Compute average by dividing total by length
-		this.avgAP = (int)totalAP / tData_rankings.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgAP = (int)totalAP / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgAP = 0;
+		}
+
 	}
 	
 	/**
@@ -259,8 +289,16 @@ public class Team {
 			//Add to total
 			totalSP += SP;
 		}
-		//Compute average by dividing total by length
-		this.avgSP = (int)totalSP / tData_rankings.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgSP = (int)totalSP / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgSP = 0;
+		}
+
 	}
 	
 	/**
@@ -276,8 +314,16 @@ public class Team {
 			//Add to total
 			totalTRSP += TRSP;
 		}
-		//Compute average by dividing total by length
-		this.avgSP = (int)totalTRSP / tData_rankings.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_rankings.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgTRSP = (int)totalTRSP / tData_rankings.length();
+		}else {
+			//If zero, set to 0
+			this.avgTRSP = 0;
+		}
+
 	}
 	
 	/*
@@ -304,12 +350,32 @@ public class Team {
 	/**
 	 * Sets the team's vrating rank
 	 */
-	private void setvrating_rank() { this.vrating_rank = tData_season_rankings.getJSONObject(0).getInt("vrating_rank"); }
+	private void setvrating_rank() { 
+		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
+		if(tData_season_rankings.length() != 0) {
+			//If nonzero, set properly
+			this.vrating_rank = tData_season_rankings.getJSONObject(0).getInt("vrating_rank"); 
+		}else { //Is zero
+			//If zero, set to zero
+			this.vrating_rank = 0;
+		}
+		
+	}
 	
 	/**
 	 * Set's the team's vrating
 	 */
-	private void setvrating() { this.vrating = tData_season_rankings.getJSONObject(0).getDouble("vrating"); }
+	private void setvrating() { 
+		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
+		if(tData_season_rankings.length() != 0) {
+			//If nonzero, set properly
+			this.vrating = tData_season_rankings.getJSONObject(0).getDouble("vrating");
+		}else { //Is zero
+			//If zero, set to zero
+			this.vrating = 0.0;
+		}
+		 
+	}
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -317,8 +383,6 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	//TODO: Implement special cases for dividing by zero(in an instance where a team has no skills matches,
-	//		or other things that could have zero sets of data for as well).
 	/*
 	 * "type":0 - Autonomous
 	 * "type":1 - Robot
@@ -341,8 +405,15 @@ public class Team {
 				totalScore += score;
 			}
 		}
-		//Compute average by dividing total by length
-		this.avgSkillsScore_auton = (int)totalScore/tData_skills.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_skills.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgSkillsScore_auton = (int)totalScore/tData_skills.length();
+		}else {
+			//If zero, set to zero
+			this.avgSkillsScore_auton = 0;
+		}
 	}
 	
 	/**
@@ -361,8 +432,15 @@ public class Team {
 				totalScore += score;
 			}
 		}
-		//Compute average by dividing total by length
-		this.avgSkillsScore_robot = (int)totalScore/tData_skills.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_skills.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgSkillsScore_robot = (int)totalScore/tData_skills.length();
+		}else {
+			//If zero, set to zero
+			this.avgSkillsScore_robot = 0;
+		}
 	}
 	
 	/**
@@ -381,8 +459,15 @@ public class Team {
 				totalScore += score;
 			}
 		}
-		//Compute average by dividing total by length
-		this.avgSkillsScore_combined = (int)totalScore/tData_skills.length();
+		//Compute average
+		/*Avoid ArithmeticException by checking if divisor is 0*/
+		if(tData_skills.length() != 0) {
+			//If nonzero, set to appropriate value
+			this.avgSkillsScore_combined = (int)totalScore/tData_skills.length();
+		}else {
+			//If zero, set to zero
+			this.avgSkillsScore_combined = 0;
+		}
 	}
 	/*
 	------------------------------------------------------------------------------------------
@@ -392,6 +477,12 @@ public class Team {
 	------------------------------------------------------------------------------------------
 	*/
 	
+	/**
+	 * Retrieves the current team name(IE: "90241B")
+	 * 
+	 * @return the team name
+	 */
+	public String getName() { return this.name; }
 	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
 	 * 
@@ -497,4 +588,9 @@ public class Team {
 	 * @return the average skills score for both autonomous and driver control mode
 	 */
 	public int getAvgSkillsScore_combined() { return this.avgSkillsScore_combined; }
+	
+	/**
+	 * A toString method that simply returns the team name
+	 */
+	public String toString() { return "Team " + this.name; }
 }

@@ -10,7 +10,7 @@ import java.util.*;
  * This part of the program is able to take team names(IE: 90241B) and parse stats from 
  * selected team, for example average OPR. 
  * 
- * This class is responsible for reading data from VexDB and creating Team objects.
+ * This class is responsible for creating team objects by retrieving data from VexDB
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.1
@@ -18,14 +18,13 @@ import java.util.*;
  *
  */
 public class TeamBuilder {
-	
 	/**
 	  * Parses a team and its stats into the teams list
 	  * 
 	  * @param teamName the name the of team(IE: 90241B)
 	  * @throws IOException
 	  */
-	 public Team parseTeam(String teamName) throws IOException{
+	 public static Team parseTeam(String teamName) throws IOException{
 		 //Construct links for lookup
 		 String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + teamName + "&season=In%20The%20Zone";
 		 String str_events = "https://api.vexdb.io/v1/get_events?team=" + teamName + "&season=In%20The%20Zone";
@@ -42,7 +41,6 @@ public class TeamBuilder {
 		 JSONArray tArray_skills = tData_skills.getJSONArray("result");
 		 //Return new team (events does not need to be in an array since the "size" value is all that is needed)
 		 return new Team(teamName, tArray_rankings, tData_events, tArray_season_rankings, tArray_skills);
-		 
 	 }
 	 
 	 /**
@@ -54,7 +52,7 @@ public class TeamBuilder {
 	  * @throws IOException
 	  * @throws JSONException
 	  */
-	public JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+	public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
 		InputStream is = new URL(url).openStream();
 		try {
 			BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
@@ -74,7 +72,7 @@ public class TeamBuilder {
 	 * @return the whole string outputted from the reader
 	 * @throws IOException
 	 */
-	private  String readAll(Reader rd) throws IOException {
+	private static String readAll(Reader rd) throws IOException {
 	    StringBuilder sb = new StringBuilder();
 	    int cp;
 	    while ((cp = rd.read()) != -1) {
