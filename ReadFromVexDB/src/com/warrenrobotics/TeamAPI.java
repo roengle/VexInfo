@@ -6,25 +6,23 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.api.services.sqladmin.SQLAdmin;
-import com.google.api.services.sqladmin.SQLAdminScopes;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+
 import java.security.GeneralSecurityException;
+
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import org.json.*;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 /**
  * Interacts with Google Sheets using the Google Sheets API v4 to automatically take 
@@ -58,13 +56,13 @@ public class TeamAPI {
 	 * @param scope the scope of data allowed access for the end user. Since we are planning on editing and reading spreadsheets, 
 	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
-	public TeamAPI(String spreadsheetId, String refreshToken, String scope) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String spreadsheetId, String refreshToken) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
 		this.range = "Sheet1";
 		this.valueRenderOption = "FORMATTED_VALUE";
 		this.dateTimeRenderOption = "SERIAL_NUMBER";
 		this.refreshToken = refreshToken;
-		this.scope = scope;
+		this.scope = "https://www.googleapis.com/auth/spreadsheets";
 		//Assign access token
 		setAccessToken();
 		//Create sheet service and request data using it
@@ -122,7 +120,8 @@ public class TeamAPI {
 		br.close();
 		//Create a token response using refresh token and oauth credentials
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				this.refreshToken, clientId, clientSecret).execute();
+				this.refreshToken, clientId, clientSecret)
+				.execute();
 		//Set the access token as the response
 		this.accessToken = response.getAccessToken();   
 	}
@@ -187,10 +186,30 @@ public class TeamAPI {
 		//Write data for a team into spreadsheet
 		/*
 		 * For each time, write in this specific order:
-		 * 
 		 * avgOPR, avgDPR, avgCCWM, avgAP, avgSP, avgTSRP, vratingRank, vrating, avgRank, avgSkills_robot,
 		 * avgSkills_auton, 
 		*/
+		/*Goal is to minimize wait time*/
+		//Setup wait time based on size of array
+		int waitTime;
+		//Set wait time(milliseconds)
+		if(teamList.length <= 100) {
+			//Run full speed
+			waitTime = 0;
+		}else {
+			/*
+			 * Requirement: 1.000 second(s)/request		(MINIMUM)
+			 * Current    : 0.500 second(s)/request		(ASSUMPTION OF FASTEST REQUEST)
+			 * (subtract) -------------------------
+			 * Offset     : 0.500 second(s)/request
+			 * 
+			 * Use wait constant of 0.500 seconds.
+			 */
+			waitTime = 650; //Mess around with this value, sometimes algorithmn runs faster once is has started
+		}
+		//Debugging for how long algorithm takes to run with certain data sets
+		long startTime = System.currentTimeMillis();
+		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Grab team name
 			String s = teamList[i];
@@ -204,19 +223,26 @@ public class TeamAPI {
 			List<List<Object>> values = Arrays.asList(Arrays.asList(valuesArr));
 			//Configure body as a ValueRange object
 			ValueRange body = new ValueRange().setValues(values);
-			//Configure range as Sheet1!F#:S# where # is a number based on the current team-(i+2)
-			String range = "Sheet1!F" + (i + 2) + ":S" + (i+2);
+			//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
+			String range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
 			//Send write request and receive response
 			UpdateValuesResponse result = 
 					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
 					.setValueInputOption("USER_ENTERED")
 					.execute();
 			//Print out success message
-			System.out.println("#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + result.getUpdatedCells() + " cells updated)");
-			//Wait 1 second(fix for quota)
-			Thread.sleep(1000);
+			System.out.println("COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + result.getUpdatedCells() + " cells updated)");
+			//If team list length is 100 or less, have algorithm go full speed
+			//otherwise use algorithm to determine what wait time should be based on length of team list
+			
+			//Wait function
+			Thread.sleep(waitTime);
 		}
-		System.out.println("SUCCESSFUL WRITE - " + teamList.length + " TEAMS ACQUIRED");
+		//Establish how long algorithm took to run(milliseconds)
+		long runtime = System.currentTimeMillis() - startTime;
+		//Convert to seconds
+		double runtimeInSeconds = (double)runtime/1000;
+		System.out.println("SUCCESS - " + teamList.length + " TEAMS UPDATED IN " + runtimeInSeconds + " SECONDS");
 	}
 	/*
 	------------------------------------------------------------------------------------------
@@ -241,7 +267,8 @@ public class TeamAPI {
 	
 	/**
 	 * Retrieves the current team list provided by proccessResponseIntoTeamList()
-	 * @return
+	 * 
+	 * @return the team list as an array of Strings
 	 */
 	public String[] getTeamList() { return this.teamList; }
 }

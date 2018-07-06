@@ -5,7 +5,8 @@ import org.json.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 /**
  * This part of the program is able to take team names(IE: 90241B) and parse stats from 
  * selected team, for example average OPR. 

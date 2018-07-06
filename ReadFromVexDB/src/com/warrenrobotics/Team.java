@@ -3,6 +3,7 @@ package com.warrenrobotics;
 import org.json.*;
 /**
  * This class allows for team statistics to be parsed and stored. 
+ * 
  * Current statistics:
  * 		Average OPR
  * 		Average DPR
@@ -120,6 +121,7 @@ public class Team {
 		calculateAvgSkillsScore_robot();
 		calculateAvgSkillsScore_combined();
 	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -376,6 +378,7 @@ public class Team {
 		}
 		 
 	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -469,6 +472,7 @@ public class Team {
 			this.avgSkillsScore_combined = 0;
 		}
 	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
