@@ -51,7 +51,7 @@ public class Team {
 	//Data - Events
 	public int numEvents;
 	//Data - Season Rankings
-	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to guage a team
+	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to gauge a team
 	   A higher vrating represents a better team
 	*/
 	public int vrating_rank;
@@ -67,7 +67,7 @@ public class Team {
 	 * @param name the name of the team(IE: 90241B)
 	 * @param tData_rankings the JSONarray acquired from getting JSON array with key "result"
 	 */
-	public Team(String name, JSONArray tData_rankings,JSONObject tData_events, JSONArray tData_season_rankings, JSONArray tData_skills){
+	public Team(String name, JSONArray tData_rankings, JSONObject tData_events, JSONArray tData_season_rankings, JSONArray tData_skills){
 		//Set data
 		this.name = name;
 		this.tData_rankings = tData_rankings;

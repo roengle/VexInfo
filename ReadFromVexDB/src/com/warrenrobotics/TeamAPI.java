@@ -5,15 +5,18 @@ import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.BackOff;
+import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 
 import java.security.GeneralSecurityException;
@@ -41,7 +44,6 @@ public class TeamAPI {
 	private String range;
 	private String valueRenderOption;
 	private String dateTimeRenderOption;
-	private String refreshToken;
 	private String accessToken;
 	private String scope;
 	private ValueRange response;
@@ -56,12 +58,11 @@ public class TeamAPI {
 	 * @param scope the scope of data allowed access for the end user. Since we are planning on editing and reading spreadsheets, 
 	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
-	public TeamAPI(String spreadsheetId, String refreshToken) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String spreadsheetId) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
 		this.range = "Sheet1";
 		this.valueRenderOption = "FORMATTED_VALUE";
 		this.dateTimeRenderOption = "SERIAL_NUMBER";
-		this.refreshToken = refreshToken;
 		this.scope = "https://www.googleapis.com/auth/spreadsheets";
 		//Assign access token
 		setAccessToken();
@@ -85,42 +86,40 @@ public class TeamAPI {
 	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-	    GoogleCredential credential = new GoogleCredential().setAccessToken(this.accessToken);
+	    //GoogleCredential credential = new GoogleCredential().setAccessToken(this.accessToken);
+	    GoogleCredential credential = new GoogleCredential.Builder().setTransport(httpTransport)
+	    		.setJsonFactory(jsonFactory)
+	    		.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
+	    		.build();
+	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.REFRESH_TOKEN);
 	    
 	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
 	        .setApplicationName(this.scope)
 	        .build();
 	}
-	
+
 	/**
 	 * Retrieves an access token using the refresh token
 	 * 
 	 * @return an access token that can be used to create a proper credential
 	 */
 	public void setAccessToken() throws IOException, GeneralSecurityException{
-		//Initialize OAuth Credential strings
-		String clientId;
-		String clientSecret;
 		/*
 		 * Note to users who plan to use this:
 		 * 
-		 * Create a txt file named "OAuth2Credentials.txt" (or anything you like and change the variable "filepath" below)
-		 * in the current working directory(or change "filepath" below)
-		 * 
-		 * Inside the text file, on the first line put only the OAuth2 client ID,
-		 * and on the second line put only the OAuth2 client secret.
+		 * On Github, the Constants.java file will not show since I put it in 
+		 * git ignore, due to it having sensitive data. In order to use this on
+		 * your own, make a new file Constants.java as an interface, and simply input
+		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET".
 		 */
-		String filePath = "src\\com\\warrenrobotics\\OAuth2Credentials.txt";
-		BufferedReader br = new BufferedReader(new FileReader(filePath));
-		//Set client id to first line
-		clientId = br.readLine();
-		//Set client secret to second line
-		clientSecret = br.readLine();
-		//Don't leak resources
-		br.close();
+
+		//Set client id 
+		String clientId = Constants.GOOGLE_CLIENT_ID;
+		//Set client secret 
+		String clientSecret = Constants.GOOGLE_CLIENT_SECRET;
 		//Create a token response using refresh token and oauth credentials
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				this.refreshToken, clientId, clientSecret)
+				Constants.REFRESH_TOKEN, clientId, clientSecret)
 				.execute();
 		//Set the access token as the response
 		this.accessToken = response.getAccessToken();   
@@ -183,37 +182,16 @@ public class TeamAPI {
 	}
 	
 	public void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
-		//Write data for a team into spreadsheet
-		/*
-		 * For each time, write in this specific order:
-		 * avgOPR, avgDPR, avgCCWM, avgAP, avgSP, avgTSRP, vratingRank, vrating, avgRank, avgSkills_robot,
-		 * avgSkills_auton, 
-		*/
-		/*Goal is to minimize wait time*/
-		//Setup wait time based on size of array
-		int waitTime;
-		//Set wait time(milliseconds)
-		if(teamList.length <= 100) {
-			//Run full speed
-			waitTime = 0;
-		}else {
-			/*
-			 * Requirement: 1.000 second(s)/request		(MINIMUM)
-			 * Current    : 0.500 second(s)/request		(ASSUMPTION OF FASTEST REQUEST)
-			 * (subtract) -------------------------
-			 * Offset     : 0.500 second(s)/request
-			 * 
-			 * Use wait constant of 0.500 seconds.
-			 */
-			waitTime = 650; //Mess around with this value, sometimes algorithmn runs faster once is has started
-		}
 		//Debugging for how long algorithm takes to run with certain data sets
 		long startTime = System.currentTimeMillis();
+		//Initialize ApilRateLimiter object
+		ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND);
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
+			//i < teamList.length
 			//Grab team name
 			String s = teamList[i];
-			//Parse into team object
+			//Parse into team object and calculate all data
 			Team t = TeamBuilder.parseTeam(s);
 			//Initialize array for inputting data
 			String[] valuesArr = new String[14];
@@ -225,18 +203,19 @@ public class TeamAPI {
 			ValueRange body = new ValueRange().setValues(values);
 			//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
 			String range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
+			//Time how long each loop takes
+			long sTime = System.currentTimeMillis();
+			//Reserve quota
+			apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
 			//Send write request and receive response
 			UpdateValuesResponse result = 
 					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
 					.setValueInputOption("USER_ENTERED")
 					.execute();
+			//Grab how long it took
+			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print out success message
-			System.out.println("COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + result.getUpdatedCells() + " cells updated)");
-			//If team list length is 100 or less, have algorithm go full speed
-			//otherwise use algorithm to determine what wait time should be based on length of team list
-			
-			//Wait function
-			Thread.sleep(waitTime);
+			System.out.println("COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + timeTaken + " ms)");
 		}
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
