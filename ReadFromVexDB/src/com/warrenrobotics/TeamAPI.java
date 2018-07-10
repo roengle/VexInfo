@@ -34,7 +34,7 @@ import org.json.JSONArray;
  * This class is responsible for all interactions with Google Sheets.
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
- * @version 1.0
+ * @version 1.1
  * @since 2018-02-21
  *
  */
@@ -42,8 +42,6 @@ public class TeamAPI {
 	//Instance variables
 	private String spreadsheetId; 
 	private String range;
-	private String valueRenderOption;
-	private String dateTimeRenderOption;
 	private String accessToken;
 	private String scope;
 	private ValueRange response;
@@ -62,8 +60,6 @@ public class TeamAPI {
 	public TeamAPI(String spreadsheetId, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
 		this.range = "Sheet1";
-		this.valueRenderOption = "FORMATTED_VALUE";
-		this.dateTimeRenderOption = "SERIAL_NUMBER";
 		this.scope = "https://www.googleapis.com/auth/spreadsheets";
 		this.season = season;
 		//Assign access token
@@ -74,21 +70,20 @@ public class TeamAPI {
 		executeGetRequest(sheetsService);
 		//Process into team list
 		processResponseIntoTeamList();
+		//Execute a write request
 		executeWriteRequest(sheetsService);
-		
 	}
 	
 	/**
 	 * Creates a sheets service that can be used to make a request for data
 	 * 
-	 * @return a Sheets object that can be used to grab data
+	 * @return a Sheets object that can be used to grab and write data
 	 * @throws IOException
 	 * @throws GeneralSecurityException
 	 */
 	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-	    //GoogleCredential credential = new GoogleCredential().setAccessToken(this.accessToken);
 	    GoogleCredential credential = new GoogleCredential.Builder().setTransport(httpTransport)
 	    		.setJsonFactory(jsonFactory)
 	    		.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
@@ -114,14 +109,9 @@ public class TeamAPI {
 		 * your own, make a new file Constants.java as an interface, and simply input
 		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET".
 		 */
-
-		//Set client id 
-		String clientId = Constants.GOOGLE_CLIENT_ID;
-		//Set client secret 
-		String clientSecret = Constants.GOOGLE_CLIENT_SECRET;
 		//Create a token response using refresh token and oauth credentials
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.REFRESH_TOKEN, clientId, clientSecret)
+				Constants.REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 				.execute();
 		//Set the access token as the response
 		this.accessToken = response.getAccessToken();   
@@ -177,8 +167,8 @@ public class TeamAPI {
 		//Setup a request for getting spreadsheet data
 		Sheets.Spreadsheets.Values.Get request =
 		    sheetsService.spreadsheets().values().get(this.spreadsheetId, this.range);
-		    request.setValueRenderOption(this.valueRenderOption);
-		    request.setDateTimeRenderOption(this.dateTimeRenderOption);
+		    request.setValueRenderOption("FORMATTED_VALUE");
+		    request.setDateTimeRenderOption("SERIAL_NUMBER");
 		//Get a response as a ValueRange(which can converted to JSON Objects)
 		this.response = request.execute();
 	}

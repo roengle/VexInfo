@@ -23,7 +23,7 @@ import org.json.*;
  * This class is responsible for calculating and storing statistics for a given VEX team.
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
- * @version 1.0
+ * @version 1.1
  * @since 2018-02-21
  *
  */

@@ -13,7 +13,7 @@ import java.nio.charset.Charset;
  * This class is responsible for creating team objects by retrieving data from VexDB
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
- * @version 1.0
+ * @version 1.1
  * @since 2018-02-21
  *
  */
