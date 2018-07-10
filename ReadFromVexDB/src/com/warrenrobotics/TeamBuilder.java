@@ -5,8 +5,7 @@ import org.json.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
+
 /**
  * This part of the program is able to take team names(IE: 90241B) and parse stats from 
  * selected team, for example average OPR. 
@@ -18,19 +17,21 @@ import java.util.Map;
  * @since 2018-02-21
  *
  */
-public class TeamBuilder {
+public class TeamBuilder {	
 	/**
 	  * Parses a team and its stats into the teams list
 	  * 
 	  * @param teamName the name the of team(IE: 90241B)
 	  * @throws IOException
 	  */
-	 public static Team parseTeam(String teamName) throws IOException{
+	 public static Team parseTeam(String teamName, String season) throws IOException{
+		 //URL-Escape season by simply replacing spaces with "%20"
+		 String formattedSeason = season.replaceAll(" ", "%20");
 		 //Construct links for lookup
-		 String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + teamName + "&season=In%20The%20Zone";
-		 String str_events = "https://api.vexdb.io/v1/get_events?team=" + teamName + "&season=In%20The%20Zone";
-		 String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + teamName + "&season=In%20The%20Zone";
-		 String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + teamName + "&season=In%20The%20Zone";
+		 String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + teamName + "&season=" + formattedSeason;
+		 String str_events = "https://api.vexdb.io/v1/get_events?team=" + teamName + "&season=" + formattedSeason;
+		 String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + teamName + "&season=" + formattedSeason;
+		 String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + teamName + "&season=" + formattedSeason;
 		 //Create JSON objects
 		 JSONObject tData_rankings = readJsonFromUrl(str_rankings);
 		 JSONObject tData_events = readJsonFromUrl(str_events);

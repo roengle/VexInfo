@@ -48,6 +48,7 @@ public class TeamAPI {
 	private String scope;
 	private ValueRange response;
 	public String[] teamList;
+	public String season;
 	
 	/**
 	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
@@ -58,12 +59,13 @@ public class TeamAPI {
 	 * @param scope the scope of data allowed access for the end user. Since we are planning on editing and reading spreadsheets, 
 	 * 		  we will use https://www.googleapis.com/auth/spreadsheets
 	 */
-	public TeamAPI(String spreadsheetId) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String spreadsheetId, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
 		this.range = "Sheet1";
 		this.valueRenderOption = "FORMATTED_VALUE";
 		this.dateTimeRenderOption = "SERIAL_NUMBER";
 		this.scope = "https://www.googleapis.com/auth/spreadsheets";
+		this.season = season;
 		//Assign access token
 		setAccessToken();
 		//Create sheet service and request data using it
@@ -192,7 +194,7 @@ public class TeamAPI {
 			//Grab team name
 			String s = teamList[i];
 			//Parse into team object and calculate all data
-			Team t = TeamBuilder.parseTeam(s);
+			Team t = TeamBuilder.parseTeam(s, season);
 			//Initialize array for inputting data
 			String[] valuesArr = new String[14];
 			//Build array with proper data
@@ -208,6 +210,7 @@ public class TeamAPI {
 			//Reserve quota
 			apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
 			//Send write request and receive response
+			@SuppressWarnings("unused")
 			UpdateValuesResponse result = 
 					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
 					.setValueInputOption("USER_ENTERED")
