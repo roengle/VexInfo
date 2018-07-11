@@ -1,6 +1,14 @@
 package com.warrenrobotics;
 	
 import org.json.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.nio.charset.Charset;
+
 /**
  * This class allows for team statistics to be parsed and stored. 
  * 
@@ -34,9 +42,9 @@ public class Team {
 	//Name
 	public String name;
 	//JSON Array Data
-	public JSONArray tData_rankings;
-	public JSONObject tData_events; //Is not an array since the only needed piece of data can be acquired from "size"
-	public JSONArray tData_season_rankings;
+	private JSONArray tData_rankings;
+	private JSONObject tData_events; //Is not an array since the only needed piece of data can be acquired from "size"
+	private JSONArray tData_season_rankings;
 	public JSONArray tData_skills;
 	//Data - Rankings
 	public double avgOPR;
@@ -67,13 +75,13 @@ public class Team {
 	 * @param name the name of the team(IE: 90241B)
 	 * @param tData_rankings the JSONarray acquired from getting JSON array with key "result"
 	 */
-	public Team(String name, JSONArray tData_rankings, JSONObject tData_events, JSONArray tData_season_rankings, JSONArray tData_skills){
+	private Team(TeamBuilder tb){
 		//Set data
-		this.name = name;
-		this.tData_rankings = tData_rankings;
-		this.tData_events = tData_events;
-		this.tData_season_rankings = tData_season_rankings;
-		this.tData_skills = tData_skills;
+		this.name = tb.teamName;
+		this.tData_rankings = tb.tData_rankings;
+		this.tData_events = tb.tData_events;
+		this.tData_season_rankings = tb.tData_season_rankings;
+		this.tData_skills = tb.tData_skills;
 		//Perform calculations
 		performCalculations_rankings();
 		performCalculations_events();
@@ -95,7 +103,6 @@ public class Team {
 		calculateAvgAP();
 		calculateAvgSP();
 		calculateAvgTRSP();
-		
 	}
 	
 	/**
@@ -597,4 +604,115 @@ public class Team {
 	 * A toString method that simply returns the team name
 	 */
 	public String toString() { return "Team " + this.name; }
-}
+	
+	/*
+	------------------------------------------------------------------------------------------
+	//																						//
+	//										  BUILDER CLASS								    //
+	//																						//
+	------------------------------------------------------------------------------------------
+	*/
+	public static class TeamBuilder{
+		//Name
+		public String teamName;
+		//Season(wont appear, only used for grabbing data)
+		public String season;
+		//JSON Array Data
+		public JSONArray tData_rankings;
+		public JSONObject tData_events; 
+		public JSONArray tData_season_rankings;
+		public JSONArray tData_skills;
+		
+		public TeamBuilder(String teamName, String season) throws JSONException, IOException {
+			this.teamName = teamName;
+			this.season = season;
+		}
+		
+		public TeamBuilder setRankingData() throws JSONException, IOException {
+			//URL-Escape the season
+			String formattedSeason = this.season.replace(" ", "%20");
+			//Construct link for lookup
+			String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + this.teamName + "&season=" + formattedSeason;
+			//Create JSON object
+			JSONObject tObject_rankings = readJsonFromUrl(str_rankings);
+			//Create respective array
+			this.tData_rankings = tObject_rankings.getJSONArray("result");
+			return this;
+		}
+		
+		public TeamBuilder setEventData() throws JSONException, IOException {
+			//URL-Escape the season
+			String formattedSeason = this.season.replace(" ", "%20");
+			//Construct link for lookup
+			String str_events = "https://api.vexdb.io/v1/get_events?team=" + this.teamName + "&season=" + formattedSeason;
+			//Create JSON object
+			this.tData_events = readJsonFromUrl(str_events);
+			return this;
+		}
+		
+		public TeamBuilder setSeasonData() throws JSONException, IOException { 
+			//URL-Escape the season
+			String formattedSeason = this.season.replace(" ", "%20");
+			//Construct link for lookup
+			String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + this.teamName + "&season=" + formattedSeason;
+			//Create JSON object
+			JSONObject tObject_season_rankings = readJsonFromUrl(str_season_rankings);
+			//Create respective array
+			this.tData_season_rankings = tObject_season_rankings.getJSONArray("result");
+			return this;
+		}
+		
+		public TeamBuilder setSkillsData() throws JSONException, IOException {
+			//URL-Escape the season
+			String formattedSeason = this.season.replace(" ", "%20");
+			//Construct link for lookup
+			String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + this.teamName + "&season=" + formattedSeason;
+			//Create JSON object
+			JSONObject tObject_skills = readJsonFromUrl(str_skills);
+			//Create respective array
+			this.tData_skills = tObject_skills.getJSONArray("result");
+			return this;
+		}
+		
+		public Team build() {
+			return new Team(this);
+		}
+		/**
+		  * Creates a JSON object by reading a url that contains a JSON output, in this case 
+		  * the URL is from the VexDB.io API
+	      * 
+		  * @param url the url that has the JSON output
+		  * @return a JSONObject created from a JSON output from desired URL
+		  * @throws IOException
+		  * @throws JSONException
+		  */
+		public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
+			InputStream is = new URL(url).openStream();
+			try {
+				BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+				String jsonText = readAll(rd);
+				JSONObject json = new JSONObject(jsonText);
+				return json;
+			} finally {
+				is.close();
+			}
+		}
+			
+		/**
+		 * Reads all letters from a reader and returns a string of these. Is currently 
+		 * a work-around for some bugs involving readers and outputs
+		 * 
+		 * @param rd The reader to extrapolate a string from
+		 * @return the whole string outputted from the reader
+		 * @throws IOException
+		 */
+		private static String readAll(Reader rd) throws IOException {
+			StringBuilder sb = new StringBuilder();
+		    int cp;
+		    while ((cp = rd.read()) != -1) {
+		      sb.append((char) cp);
+		    }
+		    return sb.toString();
+		}
+	}//end TeamBuilder class
+}//end Team class

@@ -180,11 +180,17 @@ public class TeamAPI {
 		ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND);
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
-			//i < teamList.length
 			//Grab team name
-			String s = teamList[i];
+			String n = teamList[i];
 			//Parse into team object and calculate all data
-			Team t = TeamBuilder.parseTeam(s, season);
+			String season = "In The Zone";
+			//Team t = TeamBuilder.parseTeam(s, season);
+			Team t = new Team.TeamBuilder(n, season)
+					.setEventData()
+					.setRankingData()
+					.setSeasonData()
+					.setSkillsData()
+					.build();
 			//Initialize array for inputting data
 			String[] valuesArr = new String[14];
 			//Build array with proper data
@@ -197,8 +203,8 @@ public class TeamAPI {
 			String range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
 			//Time how long each loop takes
 			long sTime = System.currentTimeMillis();
-			//Reserve quota
-			apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
+			//Reserve quota(currently disabled, quota was updated by google)
+			//apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
 			//Send write request and receive response
 			@SuppressWarnings("unused")
 			UpdateValuesResponse result = 
