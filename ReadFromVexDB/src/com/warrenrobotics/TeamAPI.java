@@ -5,14 +5,9 @@ import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.BackOff;
-import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
@@ -41,12 +36,11 @@ import org.json.JSONArray;
 public class TeamAPI {
 	//Instance variables
 	private String spreadsheetId; 
-	private String range;
+	public String season;
 	private String accessToken;
-	private String scope;
 	private ValueRange response;
 	public String[] teamList;
-	public String season;
+	
 	
 	/**
 	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
@@ -59,8 +53,6 @@ public class TeamAPI {
 	 */
 	public TeamAPI(String spreadsheetId, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		this.spreadsheetId = spreadsheetId;
-		this.range = "Sheet1";
-		this.scope = "https://www.googleapis.com/auth/spreadsheets";
 		this.season = season;
 		//Assign access token
 		setAccessToken();
@@ -91,7 +83,7 @@ public class TeamAPI {
 	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.REFRESH_TOKEN);
 	    
 	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
-	        .setApplicationName(this.scope)
+	        .setApplicationName("https://www.googleapis.com/auth/spreadsheets")
 	        .build();
 	}
 
@@ -100,7 +92,7 @@ public class TeamAPI {
 	 * 
 	 * @return an access token that can be used to create a proper credential
 	 */
-	public void setAccessToken() throws IOException, GeneralSecurityException{
+	public void setAccessToken() throws IOException, GeneralSecurityException, TokenResponseException{
 		/*
 		 * Note to users who plan to use this:
 		 * 
@@ -142,31 +134,108 @@ public class TeamAPI {
 	
 	private void buildValues(String[] arr, Team t) {
 		/*
-		 * For each time, write in this specific order:
-		 * 
-		 * avgOPR, avgDPR, avgCCWM, avgAP, avgSP, avgTSRP, vratingRank, vrating, avgRank, avgSkills_robot,
-		 * avgSkills_auton, avgSkills_combined, avgMaxScore, totalEvents
+		 * Write in this specific order:
+		 * 1. avgOPR
+		 * 2. avgDPR, 
+		 * 3. avgCCWM, 
+		 * 4. avgAP, 
+		 * 5. avgSP, 
+		 * 6. avgTSRP, 
+		 * 7. vratingRank, 
+		 * 8. vrating, 
+		 * 9. avgRank, 
+		 * 10. avgSkills_auton,
+		 * 11. avgSkills_robot, 
+		 * 12. avgSkills_combined, 
+		 * 13. avgMaxScore, 
+		 * 14. totalEvents
 		*/
-		arr[0] = Double.toString(t.getAvgOPR());
-		arr[1] = Double.toString(t.getAvgDPR());
-		arr[2] = Double.toString(t.getAvgCCWM());
-		arr[3] = Integer.toString(t.getAvgAP());
-		arr[4] = Integer.toString(t.getAvgSP());
-		arr[5] = Integer.toString(t.getAvgTRSP());
-		arr[6] = Integer.toString(t.getvrating_rank());
-		arr[7] = Double.toString(t.getvrating());
-		arr[8] = Integer.toString(t.getAvgRank());
-		arr[9] = Integer.toString(t.getAvgSkillsScore_robot());
-		arr[10] = Integer.toString(t.getAvgSkillsScore_auton());
-		arr[11] = Integer.toString(t.getAvgSkillsScore_combined());
-		arr[12] = Integer.toString(t.getAvgMaxScore());
+		//0.
+		if(t.fieldIndicators.get("opr") == true) {
+			arr[0] = Double.toString(t.getAvgOPR());
+		}else {
+			arr[0] = "NOT_FOUND";
+		}
+		//1.
+		if(t.fieldIndicators.get("dpr") == true) {
+			arr[1] = Double.toString(t.getAvgDPR());
+		}else {
+			arr[1] = "NOT_FOUND";
+		}
+		//2.
+		if(t.fieldIndicators.get("ccwm") == true) {
+			arr[2] = Double.toString(t.getAvgCCWM());
+		}else {
+			arr[2] = "NOT_FOUND";
+		}
+		//3.
+		if(t.fieldIndicators.get("ap") == true) {
+			arr[3] = Integer.toString(t.getAvgAP());
+		}else {
+			arr[3] = "NOT_FOUND";
+		}
+		//4.
+		if(t.fieldIndicators.get("ap") == true) {
+			arr[4] = Integer.toString(t.getAvgSP());
+		}else {
+			arr[4] = "NOT_FOUND";
+		}
+		//5.
+		if(t.fieldIndicators.get("trsp") == true) {
+			arr[5] = Integer.toString(t.getAvgTRSP());
+		}else {
+			arr[5] = "NOT_FOUND";
+		}
+		//6.
+		if(t.fieldIndicators.get("vrating_rank") == true) {
+			arr[6] = Integer.toString(t.getvrating_rank());
+		}else {
+			arr[6] = "NOT_FOUND";
+		}
+		//7.
+		if(t.fieldIndicators.get("vrating") == true) {
+			arr[7] = Double.toString(t.getvrating());
+		}else {
+			arr[7] = "NOT_FOUND";
+		}
+		//8.
+		if(t.fieldIndicators.get("rank") == true) {
+			arr[8] = Integer.toString(t.getAvgRank());
+		}else {
+			arr[8] = "NOT_FOUND";
+		}
+		//9.
+		if(t.fieldIndicators.get("skills_auton") == true) {
+			arr[9] = Integer.toString(t.getAvgSkillsScore_auton());
+		}else {
+			arr[9] = "NOT_FOUND";
+		}
+		//10.
+		if(t.fieldIndicators.get("skills_robot") == true) {
+			arr[10] = Integer.toString(t.getAvgSkillsScore_robot());
+		}else {
+			arr[10] = "NOT_FOUND";
+		}
+		//11.
+		if(t.fieldIndicators.get("skills_combined") == true) {
+			arr[11] = Integer.toString(t.getAvgSkillsScore_combined());
+		}else {
+			arr[11] = "NOT_FOUND";
+		}
+		//12.
+		if(t.fieldIndicators.get("max_score") == true) {
+			arr[12] = Integer.toString(t.getAvgMaxScore());
+		}else {
+			arr[12] = "NOT_FOUND";
+		}
+		//13.
 		arr[13] = Integer.toString(t.getNumEvents());
 	}
 	
 	public void executeGetRequest(Sheets sheetsService) throws IOException{
 		//Setup a request for getting spreadsheet data
 		Sheets.Spreadsheets.Values.Get request =
-		    sheetsService.spreadsheets().values().get(this.spreadsheetId, this.range);
+		    sheetsService.spreadsheets().values().get(this.spreadsheetId, "Sheet1");
 		    request.setValueRenderOption("FORMATTED_VALUE");
 		    request.setDateTimeRenderOption("SERIAL_NUMBER");
 		//Get a response as a ValueRange(which can converted to JSON Objects)

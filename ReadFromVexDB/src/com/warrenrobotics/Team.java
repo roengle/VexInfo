@@ -1,6 +1,10 @@
 package com.warrenrobotics;
 	
+//Used in Team class
 import org.json.*;
+import java.util.HashMap;
+import java.util.Map;
+//Use in TeamBuilder class
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +12,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
-
 /**
  * This class allows for team statistics to be parsed and stored. 
  * 
@@ -30,11 +33,14 @@ import java.nio.charset.Charset;
  * 
  * This class is responsible for calculating and storing statistics for a given VEX team.
  * 
+ * The TeamBuilder class(line 690) is responsible for building a Team object.
+ * 
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.1
  * @since 2018-02-21
  *
  */
+
 public class Team {
 	/*
 	 Fields for team class
@@ -52,7 +58,6 @@ public class Team {
 	public double avgCCWM;
 	public int avgMaxScore;
 	public int avgRank;
-	public int bestRank;
 	public int avgAP;
 	public int avgSP;
 	public int avgTRSP;
@@ -68,6 +73,25 @@ public class Team {
 	public int avgSkillsScore_robot;
 	public int avgSkillsScore_auton;
 	public int avgSkillsScore_combined;
+	
+	//Use static initializer to prevent having to fill with values for every iteration
+	public static Map<String, Boolean> fieldIndicators = new HashMap<>();
+	static {
+		//Initialize all to true, then when checking, set to false if needed
+		fieldIndicators.put("opr", true);
+		fieldIndicators.put("dpr", true);
+		fieldIndicators.put("ccwm", true);
+		fieldIndicators.put("max_score", true);
+		fieldIndicators.put("rank", true);
+		fieldIndicators.put("ap", true);
+		fieldIndicators.put("sp", true);
+		fieldIndicators.put("trsp", true);
+		fieldIndicators.put("skills_auton", true);
+		fieldIndicators.put("skills_robot", true);
+		fieldIndicators.put("skills_combined", true);
+		fieldIndicators.put("vrating_rank", true);
+		fieldIndicators.put("vrating", true);
+	}
 	
 	/**
 	 * Constructs a Team object and runs all necessary calculations to compile statistics
@@ -136,7 +160,7 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	//TODO: Add indicators for blank fields
+	
 	/**
 	 * Calculates the average OPR and sets the classes instance variable to it
 	 */
@@ -153,11 +177,14 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("opr", true);
 			//If nonzero, set to appropriate value
 			this.avgOPR = (totalOPR + 0.0) / tData_rankings.length();
 		}else {
-			//If zero, set to 0. In the future, add something to indicate a 
-			//blank field and report it so the spreadsheet can show that.
+			//Add indicator
+			fieldIndicators.put("opr", false);
+			//If zero, set to 0
 			this.avgOPR = 0.0;
 		}
 	}
@@ -178,9 +205,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("dpr", true);
 			//If nonzero, set to appropriate value
 			this.avgDPR = (totalDPR + 0.0) / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("dpr", false);
 			//If zero, set to 0
 			this.avgDPR = 0.0;
 		}
@@ -201,9 +232,13 @@ public class Team {
 		}
 		//Avoid ArithmeticException by checking if divisor is 0
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("ccwm", true);
 			//If nonzero, set to appropriate value
 			this.avgCCWM = (totalCCWM + 0.0) / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("ccwm", false);
 			//If zero, set to 0
 			this.avgCCWM = 0.0;
 		}
@@ -225,9 +260,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("max_score", true);
 			//If nonzero, set to appropriate value
 			this.avgMaxScore = (int)totalScore / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("max_score", false);
 			//If zero, set to 0
 			this.avgMaxScore = 0;
 		}
@@ -252,9 +291,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("rank", true);
 			//If nonzero, set to appropriate value
 			this.avgRank = (int)totalRank / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("rank", false);
 			//If zero, set to 0
 			this.avgRank = 0;
 		}
@@ -276,9 +319,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("ap", true);
 			//If nonzero, set to appropriate value
 			this.avgAP = (int)totalAP / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("ap", false);
 			//If zero, set to 0
 			this.avgAP = 0;
 		}
@@ -301,9 +348,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("sp", true);
 			//If nonzero, set to appropriate value
 			this.avgSP = (int)totalSP / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("sp", false);
 			//If zero, set to 0
 			this.avgSP = 0;
 		}
@@ -326,9 +377,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("trsp", true);
 			//If nonzero, set to appropriate value
 			this.avgTRSP = (int)totalTRSP / tData_rankings.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("trsp", false);
 			//If zero, set to 0
 			this.avgTRSP = 0;
 		}
@@ -362,9 +417,13 @@ public class Team {
 	private void setvrating_rank() { 
 		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
 		if(tData_season_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("vrating_rank", true);
 			//If nonzero, set properly
 			this.vrating_rank = tData_season_rankings.getJSONObject(0).getInt("vrating_rank"); 
-		}else { //Is zero
+		}else { //Is zero, so vrating rank won't even appear
+			//Add indicator
+			fieldIndicators.put("vrating_rank", false);
 			//If zero, set to zero
 			this.vrating_rank = 0;
 		}
@@ -377,9 +436,13 @@ public class Team {
 	private void setvrating() { 
 		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
 		if(tData_season_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("vrating", true);
 			//If nonzero, set properly
 			this.vrating = tData_season_rankings.getJSONObject(0).getDouble("vrating");
-		}else { //Is zero
+		}else { //Is zero, so vrating won't even appear
+			//Add indicator
+			fieldIndicators.put("vrating", false);
 			//If zero, set to zero
 			this.vrating = 0.0;
 		}
@@ -407,7 +470,7 @@ public class Team {
 		int totalScore = 0;
 		//Break up array, search for skills score in each part
 		for(int i = 0; i < tData_skills.length(); i++) {
-			//Only check autonomous results
+			//Only check autonomous results(type = 0)
 			if(tData_skills.getJSONObject(i).getInt("type") == 0){
 				//Grab value
 				int score = tData_skills.getJSONObject(i).getInt("score");
@@ -418,9 +481,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_skills.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("skills_auton", true);
 			//If nonzero, set to appropriate value
 			this.avgSkillsScore_auton = (int)totalScore/tData_skills.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("skills_auton", false);
 			//If zero, set to zero
 			this.avgSkillsScore_auton = 0;
 		}
@@ -434,7 +501,7 @@ public class Team {
 		int totalScore = 0;
 		//Break up array, search for skills score in each part
 		for(int i = 0; i < tData_skills.length(); i++) {
-			//Only check robot results
+			//Only check robot results(type = 1)
 			if(tData_skills.getJSONObject(i).getInt("type") == 1){
 				//Grab value
 				int score = tData_skills.getJSONObject(i).getInt("score");
@@ -445,9 +512,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_skills.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("skills_robot", true);
 			//If nonzero, set to appropriate value
 			this.avgSkillsScore_robot = (int)totalScore/tData_skills.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("skills_robot", false);
 			//If zero, set to zero
 			this.avgSkillsScore_robot = 0;
 		}
@@ -461,7 +532,7 @@ public class Team {
 		int totalScore = 0;
 		//Break up array, search for skills score in each part
 		for(int i = 0; i < tData_skills.length(); i++) {
-			//Only check combined results
+			//Only check combined results(type = 2)
 			if(tData_skills.getJSONObject(i).getInt("type") == 2){
 				//Grab value
 				int score = tData_skills.getJSONObject(i).getInt("score");
@@ -472,9 +543,13 @@ public class Team {
 		//Compute average
 		/*Avoid ArithmeticException by checking if divisor is 0*/
 		if(tData_skills.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("skills_combined", true);
 			//If nonzero, set to appropriate value
 			this.avgSkillsScore_combined = (int)totalScore/tData_skills.length();
 		}else {
+			//Add indicator
+			fieldIndicators.put("skills_combined", false);
 			//If zero, set to zero
 			this.avgSkillsScore_combined = 0;
 		}
@@ -521,13 +596,6 @@ public class Team {
 	 * @return the average max score of the team
 	 */
 	public int getAvgMaxScore() { return avgMaxScore; }
-	
-	/**
-	 * Retrieves the best rank that a team has achieved throughout the season
-	 * 
-	 * @return the best rank of the team
-	 */
-	public int getBestRank() { return bestRank; }
 	
 	/**
 	 * Retrieves the average rank that a team has achieved throughout the season
@@ -612,6 +680,14 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
+	/**
+	 * A Builder method that is used to create a Team object. All fields in the class are 
+	 * required, as I only used a Builder method to prevent having to use a separate class.
+	 * 
+	 * @author Robert Engle | WHS Robotics | Team 90241B
+	 * @version 1.1
+	 * @since 2018-10-8
+	 */
 	public static class TeamBuilder{
 		//Name
 		public String teamName;
