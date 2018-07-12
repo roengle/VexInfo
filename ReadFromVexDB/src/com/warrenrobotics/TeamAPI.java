@@ -15,7 +15,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.IOException;
 
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -251,6 +251,8 @@ public class TeamAPI {
 		String season = "In The Zone"; //temporary move somewhere else 
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
+			//Time how long each loop takes
+			long sTime = System.currentTimeMillis();
 			//Start values as null
 			List<List<Object>> values = null;
 			String range = null;
@@ -276,7 +278,7 @@ public class TeamAPI {
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
 				range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
 				//Setup print message
-				printMsg = "COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (";
+				printMsg = "COLUMN#" + (i + 2) + " STATS UPDATED: " + t.number + " (";
 			}else {//Can still grab two teams without exception
 				//TWO-TEAM SETTING
 				//Grab first team name
@@ -310,13 +312,11 @@ public class TeamAPI {
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
 				range = "Sheet1!F" + (i + 2) + ":S" + (i + 3);
 				//Setup print message
-				printMsg = "COLUMN#" + (i + 2) + "," + (i + 3) + " STATS UPDATED: " + t1.name + "," + t2.name + "(";
+				printMsg = "COLUMN#" + (i + 2) + "," + (i + 3) + " STATS UPDATED: " + t1.number + "," + t2.number + "(";
 				i++;
 			}
 			//Configure body as a ValueRange object
 			ValueRange body = new ValueRange().setValues(values);
-			//Time how long each loop takes
-			long sTime = System.currentTimeMillis();
 			//Reserve quota(currently disabled, quota was updated by google)
 			//apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
 			//Send write request and receive response

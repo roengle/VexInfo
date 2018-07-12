@@ -45,13 +45,19 @@ public class Team {
 	/*
 	 Fields for team class
 	*/
-	//Name
-	public String name;
 	//JSON Array Data
+	private JSONArray tData_teams;
 	private JSONArray tData_rankings;
 	private JSONObject tData_events; //Is not an array since the only needed piece of data can be acquired from "size"
 	private JSONArray tData_season_rankings;
 	public JSONArray tData_skills;
+	//Data - Teams
+	public String number; //IE: 90241B
+	public String teamName; //IE: Warren WarBots II 
+	public String teamOrg;
+	public String city;
+	public String state;
+	public String country;
 	//Data - Rankings
 	public double avgOPR;
 	public double avgDPR;
@@ -101,19 +107,32 @@ public class Team {
 	 */
 	private Team(TeamBuilder tb){
 		//Set data
-		this.name = tb.teamName;
+		this.number = tb.teamNumber;
+		this.tData_teams = tb.tData_teams;
 		this.tData_rankings = tb.tData_rankings;
 		this.tData_events = tb.tData_events;
 		this.tData_season_rankings = tb.tData_season_rankings;
 		this.tData_skills = tb.tData_skills;
 		//Perform calculations
+		performCalculations_teams();
 		performCalculations_rankings();
 		performCalculations_events();
 		performCalculations_season_rankings();
 		performCalculations_skills();
 	}
 	
-	//Instance methods
+	/**
+	 * Sets information about the team itself
+	 */
+	private void performCalculations_teams() {
+		JSONObject result = tData_teams.getJSONObject(0);
+		this.number = result.getString("number");
+		this.teamName = result.getString("team_name");
+		this.teamOrg = result.getString("organisation");
+		this.city = result.getString("city");
+		this.state = result.getString("region");
+		this.country = result.getString("country");
+	}
 	
 	/**
 	 * Performs all calculations under the "rankings" category
@@ -568,7 +587,7 @@ public class Team {
 	 * 
 	 * @return the team name
 	 */
-	public String getName() { return this.name; }
+	public String getNumber() { return this.number; }
 	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
 	 * 
@@ -671,7 +690,7 @@ public class Team {
 	/**
 	 * A toString method that simply returns the team name
 	 */
-	public String toString() { return "Team " + this.name; }
+	public String toString() { return "Team " + this.number; }
 	
 	/*
 	------------------------------------------------------------------------------------------
@@ -690,25 +709,44 @@ public class Team {
 	 */
 	public static class TeamBuilder{
 		//Name
-		public String teamName;
+		public String teamNumber;
 		//Season(wont appear, only used for grabbing data)
 		public String season;
 		//JSON Array Data
+		public JSONArray tData_teams;
 		public JSONArray tData_rankings;
 		public JSONObject tData_events; 
 		public JSONArray tData_season_rankings;
 		public JSONArray tData_skills;
 		
-		public TeamBuilder(String teamName, String season) throws JSONException, IOException {
-			this.teamName = teamName;
+		/**
+		 * Constructs a TeamBuilder object. Is the only way to make a Team object. 
+		 * 
+		 * @param teamName the number of the team(IE: "90241B")
+		 * @param season the season to get stats for(IE: "In The Zone")
+		 * @throws JSONException
+		 * @throws IOException
+		 */
+		public TeamBuilder(String teamNumber, String season) throws JSONException, IOException {
+			this.teamNumber = teamNumber;
 			this.season = season;
+		}
+		
+		public TeamBuilder setTeamData() throws JSONException, IOException {
+			//Construct link for lookup
+			String str_teams = "https://api.vexdb.io/v1/get_teams?team=" + this.teamNumber;
+			//Create JSON object
+			JSONObject tObject_teams = readJsonFromUrl(str_teams);
+			//Create respective array
+			this.tData_teams = tObject_teams.getJSONArray("result");
+			return this;
 		}
 		
 		public TeamBuilder setRankingData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + this.teamName + "&season=" + formattedSeason;
+			String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + this.teamNumber + "&season=" + formattedSeason;
 			//Create JSON object
 			JSONObject tObject_rankings = readJsonFromUrl(str_rankings);
 			//Create respective array
@@ -720,7 +758,7 @@ public class Team {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_events = "https://api.vexdb.io/v1/get_events?team=" + this.teamName + "&season=" + formattedSeason;
+			String str_events = "https://api.vexdb.io/v1/get_events?team=" + this.teamNumber + "&season=" + formattedSeason;
 			//Create JSON object
 			this.tData_events = readJsonFromUrl(str_events);
 			return this;
@@ -730,7 +768,7 @@ public class Team {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + this.teamName + "&season=" + formattedSeason;
+			String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + this.teamNumber + "&season=" + formattedSeason;
 			//Create JSON object
 			JSONObject tObject_season_rankings = readJsonFromUrl(str_season_rankings);
 			//Create respective array
@@ -742,7 +780,7 @@ public class Team {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + this.teamName + "&season=" + formattedSeason;
+			String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + this.teamNumber + "&season=" + formattedSeason;
 			//Create JSON object
 			JSONObject tObject_skills = readJsonFromUrl(str_skills);
 			//Create respective array
