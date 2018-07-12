@@ -15,7 +15,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import java.io.IOException;
 
 import java.security.GeneralSecurityException;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -132,6 +132,7 @@ public class TeamAPI {
 		this.teamList = teams;
 	}
 	
+	@SuppressWarnings("static-access")
 	private void buildValues(String[] arr, Team t) {
 		/*
 		 * Write in this specific order:
@@ -247,29 +248,73 @@ public class TeamAPI {
 		long startTime = System.currentTimeMillis();
 		//Initialize ApilRateLimiter object
 		ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND);
+		String season = "In The Zone"; //temporary move somewhere else 
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
-			//Grab team name
-			String n = teamList[i];
-			//Parse into team object and calculate all data
-			String season = "In The Zone";
-			//Team t = TeamBuilder.parseTeam(s, season);
-			Team t = new Team.TeamBuilder(n, season)
-					.setEventData()
-					.setRankingData()
-					.setSeasonData()
-					.setSkillsData()
-					.build();
-			//Initialize array for inputting data
-			String[] valuesArr = new String[14];
-			//Build array with proper data
-			buildValues(valuesArr, t);
-			//Configure body for input
-			List<List<Object>> values = Arrays.asList(Arrays.asList(valuesArr));
+			//Start values as null
+			List<List<Object>> values = null;
+			String range = null;
+			String printMsg = null;
+			//ONE-TEAM V. TWO-TEAM SETTINGS
+			if((i + 1) == teamList.length) {//At end, grabbing second team will throw out of bounds exception
+				//ONE-TEAM SETTING
+				//Grab team name
+				String n = teamList[i];
+				//Parse team and calculate data
+				Team t = new Team.TeamBuilder(n, season)
+						.setEventData()
+						.setRankingData()
+						.setSeasonData()
+						.setSkillsData()
+						.build();
+				//Initialize array for inputting data
+				String[] valuesArr = new String[14];
+				//Build array with proper data
+				buildValues(valuesArr, t);
+				//Configure body for input
+				values = Arrays.asList(Arrays.asList(valuesArr));
+				//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
+				range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
+				//Setup print message
+				printMsg = "COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (";
+			}else {//Can still grab two teams without exception
+				//TWO-TEAM SETTING
+				//Grab first team name
+				String n1 = teamList[i];
+				//Parse team 1 and calculate data
+				Team t1 = new Team.TeamBuilder(n1, season)
+						.setEventData()
+						.setRankingData()
+						.setSeasonData()
+						.setSkillsData()
+						.build();
+				//Initialize array for inputting data
+				String[] valuesArr1 = new String[14];
+				//Build array with proper data
+				buildValues(valuesArr1, t1);
+				//Grab second team name
+				String n2 = teamList[i + 1];
+				//Parse team 2 and calculate data
+				Team t2 = new Team.TeamBuilder(n2, season)
+						.setEventData()
+						.setRankingData()
+						.setSeasonData()
+						.setSkillsData()
+						.build();
+				//Initialize array for inputting data
+				String[] valuesArr2 = new String[14];
+				//Build array with proper data
+				buildValues(valuesArr2, t2);
+				//Configure body for input
+				values = Arrays.asList(Arrays.asList(valuesArr1), Arrays.asList(valuesArr2));
+				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
+				range = "Sheet1!F" + (i + 2) + ":S" + (i + 3);
+				//Setup print message
+				printMsg = "COLUMN#" + (i + 2) + "," + (i + 3) + " STATS UPDATED: " + t1.name + "," + t2.name + "(";
+				i++;
+			}
 			//Configure body as a ValueRange object
 			ValueRange body = new ValueRange().setValues(values);
-			//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
-			String range = "Sheet1!F" + (i + 2) + ":S" + (i + 2);
 			//Time how long each loop takes
 			long sTime = System.currentTimeMillis();
 			//Reserve quota(currently disabled, quota was updated by google)
@@ -279,11 +324,12 @@ public class TeamAPI {
 			UpdateValuesResponse result = 
 					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
 					.setValueInputOption("USER_ENTERED")
+					.setIncludeValuesInResponse(false)
 					.execute();
 			//Grab how long it took
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print out success message
-			System.out.println("COLUMN#" + (i + 2) + " STATS UPDATED: " + t.name + " (" + timeTaken + " ms)");
+			System.out.print(printMsg + timeTaken + " ms)\n");
 		}
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
