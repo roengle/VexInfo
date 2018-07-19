@@ -5,6 +5,7 @@ import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -13,11 +14,21 @@ import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
-
+import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
-
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -80,7 +91,7 @@ public class TeamAPI {
 	    		.setJsonFactory(jsonFactory)
 	    		.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 	    		.build();
-	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.REFRESH_TOKEN);
+	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.GOOGLE_REFRESH_TOKEN);
 	    
 	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
 	        .setApplicationName("https://www.googleapis.com/auth/spreadsheets")
@@ -103,11 +114,29 @@ public class TeamAPI {
 		 */
 		//Create a token response using refresh token and oauth credentials
 		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
+				Constants.GOOGLE_REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 				.execute();
 		//Set the access token as the response
 		this.accessToken = response.getAccessToken();   
 	}
+	
+	//IMPLEMENT LATER - GETTING TOKENS FROM AUTHORIZATION CODE USING POST
+	/*
+	public void setTokens() throws ClientProtocolException, IOException {
+		HttpClient client = new DefaultHttpClient();
+		HttpPost post = new HttpPost("https://accounts.google.com/o/oauth2/token");
+		List<NameValuePair> pairs = new ArrayList<>();
+		pairs.add(new BasicNameValuePair("code", Constants.GOOGLE_OAUTH2_AUTHCODE));
+        pairs.add(new BasicNameValuePair("client_id", Constants.GOOGLE_CLIENT_ID));
+        pairs.add(new BasicNameValuePair("client_secret", Constants.GOOGLE_CLIENT_SECRET));
+        pairs.add(new BasicNameValuePair("redirect_uri", "https://developers.google.com/oauthplayground"));
+        pairs.add(new BasicNameValuePair("grant_type", "authorization_code"));
+        post.setEntity(new UrlEncodedFormEntity(pairs));
+        org.apache.http.HttpResponse response = client.execute(post);
+        String responseBody = EntityUtils.toString(response.getEntity());
+        System.out.println(responseBody);
+	}
+	*/
 	
 	/**
 	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])

@@ -724,8 +724,8 @@ public class Team {
 		 * 
 		 * @param teamName the number of the team(IE: "90241B")
 		 * @param season the season to get stats for(IE: "In The Zone")
-		 * @throws JSONException
-		 * @throws IOException
+		 * @throws JSONException for when JSON API encounters error
+		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder(String teamNumber, String season) throws JSONException, IOException {
 			this.teamNumber = teamNumber;
