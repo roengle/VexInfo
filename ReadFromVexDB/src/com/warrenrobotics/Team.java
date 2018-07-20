@@ -14,31 +14,32 @@ import java.net.URL;
 import java.nio.charset.Charset;
 /**
  * This class allows for team statistics to be parsed and stored. 
- * 
- * Current statistics:
- * 		Average OPR
- * 		Average DPR
- * 		Average CCRWM
- * 		Average Max Score
- * 		Average Ranking
- * 		Average Autonomous Points
- * 		Average Skills Points
- * 		Average TRSP Points
- * 		Total events in season
- * 		Vrating rank(Custom ranking system developed by Team BNS)
- * 		Vrating(Custom ranking system developed by Team BNS)
- * 		Average Skills Score - Autonomous
- * 		Average Skills Score - Robot
- *		Average Skills Score - Combined
- * 
- * This class is responsible for calculating and storing statistics for a given VEX team.
+ * <ul>
+ * 		<b>Current statistics:</b>
+ * 		<ul>
+ * 			<li>Average OPR</li>
+ * 			<li>Average DPR</li>
+ * 			<li>Average CCWM</li>
+ * 			<li>Average Max Score</li>
+ * 			<li>Average Ranking</li>
+ * 			<li>Average Autonomous Points</li>
+ * 			<li>Average Skills Points</li>
+ * 			<li>Average TRSP Points</li>
+ * 			<li>Total events in season</li>
+ * 			<li>Vrating rank(Custom ranking system developed by Team BNS)</li>
+ * 			<li>Vrating(Custom ranking system developed by Team BNS)</li>
+ * 			<li>Average Skills Score - Autonomous</li>
+ * 			<li>Average Skills Score - Robot</li>
+ *			<li>Average Skills Score - Combined</li>
+ *		</ul>
+ * </ul>
+ * This class is responsible for calculating and storing statistics for a given VEX team.<br><br>
  * 
  * The TeamBuilder class(line 690) is responsible for building a Team object.
  * 
  * @author Robert Engle | WHS Robotics | Team 90241B
- * @version 1.1
+ * @version 1.2
  * @since 2018-02-21
- *
  */
 
 public class Team {
@@ -48,16 +49,15 @@ public class Team {
 	//JSON Array Data
 	private JSONArray tData_teams;
 	private JSONArray tData_rankings;
-	private JSONObject tData_events; //Is not an array since the only needed piece of data can be acquired from "size"
+	private JSONObject tData_events; 
 	private JSONArray tData_season_rankings;
 	public JSONArray tData_skills;
 	//Data - Teams
 	public String number; //IE: 90241B
 	public String teamName; //IE: Warren WarBots II 
 	public String teamOrg;
-	public String city;
-	public String state;
-	public String country;
+	public String teamLocation;
+	public String teamLink;
 	//Data - Rankings
 	public double avgOPR;
 	public double avgDPR;
@@ -129,9 +129,8 @@ public class Team {
 		this.number = result.getString("number");
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
-		this.city = result.getString("city");
-		this.state = result.getString("region");
-		this.country = result.getString("country");
+		this.teamLocation = result.getString("city") + ", " + result.getString("region") + ", " + result.getString("country");
+		this.teamLink = "https://vexdb.io/teams/view/" + this.number;
 	}
 	
 	/**
@@ -475,11 +474,6 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	/*
-	 * "type":0 - Autonomous
-	 * "type":1 - Robot
-	 * "type":2 - Combined
-	 */
 	
 	/**
 	 * Calculates the average skills score for autonomous mode
@@ -583,11 +577,40 @@ public class Team {
 	*/
 	
 	/**
-	 * Retrieves the current team name(IE: "90241B")
+	 * Retrieves the current team number(IE: "90241B")
+	 * 
+	 * @return the team number
+	 */
+	public String getNumber() { return this.number; }
+	
+	/**
+	 * Retrieves the current team name(IE: "Warren Warbots II")
 	 * 
 	 * @return the team name
 	 */
-	public String getNumber() { return this.number; }
+	public String getTeamName() { return this.teamName; }
+	
+	/**
+	 * Retrieves the current team organization
+	 * 
+	 * @return the team organization
+	 */
+	public String getTeamOrg() { return this.teamOrg; }
+	
+	/**
+	 * Retrieves the current team location
+	 * 
+	 * @return the team location
+	 */
+	public String getTeamLocation() { return this.teamLocation; }
+	
+	/**
+	 * Retrieves the current team VexDB link
+	 * 
+	 * @return the VexDB.io link for the team
+	 */
+	public String getTeamLink() { return this.teamLink; }
+	
 	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
 	 * 
@@ -618,7 +641,6 @@ public class Team {
 	
 	/**
 	 * Retrieves the average rank that a team has achieved throughout the season
-	 * NOTE:Best ranking WON'T appear in spreadsheet
 	 * 
 	 * @return the average rank of the team
 	 */
@@ -695,13 +717,13 @@ public class Team {
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
-	//										  BUILDER CLASS								    //
+	//									 TEAM BUILDER CLASS								    //
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
 	/**
-	 * A Builder method that is used to create a Team object. All fields in the class are 
-	 * required, as I only used a Builder method to prevent having to use a separate class.
+	 * A Builder method that is used to create a Team object. All fields/method calls in the class are 
+	 * required, as a Builder class was used to reduce the amount of files to keep track of. 
 	 * 
 	 * @author Robert Engle | WHS Robotics | Team 90241B
 	 * @version 1.1
@@ -791,6 +813,7 @@ public class Team {
 		public Team build() {
 			return new Team(this);
 		}
+		
 		/**
 		  * Creates a JSON object by reading a url that contains a JSON output, in this case 
 		  * the URL is from the VexDB.io API
