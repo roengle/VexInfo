@@ -10,6 +10,8 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.Spreadsheet;
+import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -50,27 +52,31 @@ import org.json.JSONException;
 public class TeamAPI {
 	//Instance variables
 	private String spreadsheetId; 
-	public String season;
+	private String season;
+	private String eventName;
 	private String accessToken;
 	private ValueRange response; //Currently depreciated
 	private String[] teamList;
 	private String sku;
 	
+	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	/**
 	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
 	 * 
 	 * @param spreadsheetId the id of the spreadsheet(commonly found in the link of the spreadsheet)
 	 * @param link the URL of the RobotEvents page
 	 */
-	public TeamAPI(String spreadsheetId, String link) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link) throws IOException, GeneralSecurityException, InterruptedException{
 		//Set spreadsheet id
-		this.spreadsheetId = spreadsheetId;
-		//Process link into SKU, grab season, and set team list
+		//this.spreadsheetId = spreadsheetId;
+		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
 		//Assign access token
 		setAccessToken();
 		//Create sheet service and request data using it
 		Sheets sheetsService = createSheetsService();
+		//Create spreadsheet
+		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
 	}
@@ -91,17 +97,18 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 */
 	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
+		//Create new transport
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-	    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+	    //Build authenticated credential
 	    GoogleCredential credential = new GoogleCredential.Builder()
 	    		.setTransport(httpTransport)
 	    		.setJsonFactory(jsonFactory)
 	    		.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 	    		.build();
 	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.GOOGLE_REFRESH_TOKEN);
-	    
+	    //Build a Sheets object and return it
 	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
-	        .setApplicationName("https://www.googleapis.com/auth/spreadsheets")
+	        .setApplicationName("https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.file")
 	        .build();
 	}
 
@@ -155,7 +162,25 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Executes a get request for all data in the spreadsheet
+	 * Executes a create request to make a new spreadsheet
+	 * 
+	 * @param sheetsService the Sheets object with an authenticated credential
+	 * @throws IOException for when an I/O error occurs
+	 */
+	public void executeCreateRequest(Sheets sheetsService) throws IOException {
+		//Create a request body and set appropriate title
+		Spreadsheet requestBody = new Spreadsheet()
+				.setProperties(new SpreadsheetProperties().set("title", "VexInfo.io - " + this.eventName));
+		//Create a request to create a spreadsheet
+		Sheets.Spreadsheets.Create request = sheetsService.spreadsheets().create(requestBody);
+		//Execute the request and grab response
+		Spreadsheet response = request.execute();
+		//Set the proper spreadsheetId for the rest of the program
+		this.spreadsheetId = response.getSpreadsheetId();
+	}
+	
+	/**
+	 * Executes a get request for all data in the spreadsheet<br><br>
 	 * 
 	 * CURRENTLY DEPRECIATED UNTIL FURTHER NOTICE. 
 	 * MAY BE USED IN THE EVENT THAT A USER WOULD WANT TO MAKE A SPREADSHEET WITH ONLY SPECIFIC TEAMS
@@ -283,7 +308,7 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])
+	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])<br><br>
 	 * 
 	 * CURRENTLY DEPRECIATED UNTIL FURTHER NOTICE. 
 	 * MAY BE USED IN THE EVENT THAT A USER WOULD WANT TO MAKE A SPREADSHEET WITH ONLY SPECIFIC TEAMS
@@ -310,9 +335,10 @@ public class TeamAPI {
 	
 	/**
 	 * Processes a RobotEvents.com link to be able to get an events SKU, 
-	 * the season for that event, and a team list for that event.
+	 * the season for that event, the name of the event, and a team list
+	 * for the event.<br><br>
 	 * 
-	 * Note: Team lists can only be generated 4 weeks before the start date
+	 * <b>Note:</b> Team lists can only be generated <u>4 weeks</u> before the start date
 	 * of the tournament
 	 * 
 	 * @param s the URL of the robot events link
@@ -327,10 +353,12 @@ public class TeamAPI {
 		//Get and set event code
 		this.sku = filePath[filePath.length - 1].replaceAll(".html", "");
 		//Get and set season from API
-		this.season = Team.TeamBuilder.readJsonFromUrl("https://api.vexdb.io/v1/get_events?sku=" + this.sku)
+		JSONObject eventJson = Team.TeamBuilder.readJsonFromUrl("https://api.vexdb.io/v1/get_events?sku=" + this.sku)
 				.getJSONArray("result")
-				.getJSONObject(0)
-				.getString("season");
+				.getJSONObject(0);
+		this.season = eventJson.getString("season");
+		//Set event name
+		this.eventName = eventJson.getString("name");
 		//Build JSON array from SKU
 		JSONArray result = Team.TeamBuilder
 				.readJsonFromUrl("https://api.vexdb.io/v1/get_teams?sku=" + this.sku)
@@ -477,16 +505,13 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Retrieves the current access token provided by setAccessToken()
-	 * 
-	 * @return an access token allowing access to a sheet
-	 */
-	public String getAccessToken() { return this.accessToken; }
-	
-	/**
 	 * Retrieves the current team list provided by proccessResponseIntoTeamList()
 	 * 
 	 * @return the team list as an array of Strings
 	 */
-	public String[] getTeamList() { return this.teamList; }
+	public List<String> getTeamList() { return Arrays.asList(this.teamList); }
+	
+	public String toString() {
+		return "VexInfo.io - " + this.eventName + " (" + this.spreadsheetId + ")";
+	}
 }
