@@ -16,22 +16,10 @@ import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -52,6 +40,7 @@ import org.json.JSONException;
 public class TeamAPI {
 	//Instance variables
 	private String spreadsheetId; 
+	private String spreadsheetURL;
 	private String season;
 	private String eventName;
 	private String accessToken;
@@ -60,6 +49,7 @@ public class TeamAPI {
 	private String sku;
 	
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+	
 	/**
 	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
 	 * 
@@ -168,6 +158,8 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
+		//Time how long algorithmn takes
+		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
 		Spreadsheet requestBody = new Spreadsheet()
 				.setProperties(new SpreadsheetProperties().set("title", "VexInfo.io - " + this.eventName));
@@ -177,6 +169,12 @@ public class TeamAPI {
 		Spreadsheet response = request.execute();
 		//Set the proper spreadsheetId for the rest of the program
 		this.spreadsheetId = response.getSpreadsheetId();
+		//Set the URL of spreadsheet
+		this.spreadsheetURL = response.getSpreadsheetUrl();
+		//Get how long algorithmn has taken
+		long timeTaken = System.currentTimeMillis() - curTime;
+		//Print success message
+		System.out.println("SHEET CREATED - " + this.spreadsheetId + " (" + timeTaken + " ms)");
 	}
 	
 	/**
@@ -209,7 +207,23 @@ public class TeamAPI {
 		//Debugging for how long algorithm takes to run with certain data sets
 		long startTime = System.currentTimeMillis();
 		//Initialize ApilRateLimiter object
-		//ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND);
+		//ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND); // Currently not using
+		//Build column #1 of the spreadsheet
+		String[] names = new String[19];
+		//Assign proper values
+		putNames(names);
+		//Build list
+		List<List<Object>> topValues = Arrays.asList(Arrays.asList(names));
+		//Configure body for request as ValueRange
+		ValueRange topBody = new ValueRange().setValues(topValues);
+		//Build request and execute
+		UpdateValuesResponse topResult = 
+				sheetsService.spreadsheets().values().update(this.spreadsheetId, "Sheet1!A1:S1", topBody)
+				.setValueInputOption("USER_ENTERED")
+				.setIncludeValuesInResponse(false)
+				.execute();
+		//Print initialize message
+		System.out.println("INIT - " + teamList.length + " TEAMS");
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Time how long each loop takes
@@ -225,6 +239,7 @@ public class TeamAPI {
 				String n = teamList[i];
 				//Parse team and calculate data
 				Team t = new Team.TeamBuilder(n, this.season)
+						.setTeamData()
 						.setEventData()
 						.setRankingData()
 						.setSeasonData()
@@ -246,6 +261,7 @@ public class TeamAPI {
 				String n1 = teamList[i];
 				//Parse team 1 and calculate data
 				Team t1 = new Team.TeamBuilder(n1, this.season)
+						.setTeamData()
 						.setEventData()
 						.setRankingData()
 						.setSeasonData()
@@ -259,13 +275,14 @@ public class TeamAPI {
 				String n2 = teamList[i + 1];
 				//Parse team 2 and calculate data
 				Team t2 = new Team.TeamBuilder(n2, this.season)
+						.setTeamData()
 						.setEventData()
 						.setRankingData()
 						.setSeasonData()
 						.setSkillsData()
 						.build();
 				//Initialize array for inputting data
-				String[] valuesArr2 = new String[18];
+				String[] valuesArr2 = new String[19];
 				//Build array with proper data
 				buildValues(valuesArr2, t2);
 				//Configure body for input
@@ -296,7 +313,10 @@ public class TeamAPI {
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
 		double runtimeInSeconds = (double)runtime/1000;
+		//Print success message
 		System.out.println("SUCCESS - " + teamList.length + " TEAMS UPDATED IN " + runtimeInSeconds + " SECONDS");
+		//Print URL
+		System.out.println(this.spreadsheetURL);
 	}
 	
 	/*
@@ -496,6 +516,28 @@ public class TeamAPI {
 		arr[18] = Integer.toString(t.getNumEvents());
 	}
 	
+	public void putNames(String[] a) {
+		//Represents column #1 of the spreadsheet
+		a[0] = "Team";
+		a[1] = "Team Name";
+		a[2] = "Organization";
+		a[3] = "Location";
+		a[4] = "VexDB Link";
+		a[5] = "Average OPR";
+		a[6] = "Average DPR";
+		a[7] = "Average CCWM";
+		a[8] = "Average AP's";
+		a[9] = "Average SP's";
+		a[10] = "Average TSRP's";
+		a[11] = "Vrating Rank";
+		a[12] = "Vrating";
+		a[13] = "Average Rank";
+		a[14] = "Average Skills Score(Auton)";
+		a[15] = "Average Skills Score(Robot)";
+		a[16] = "Average Skills Score(Combined)";
+		a[17] = "Average Max Score";
+		a[18] = "Total Events This Season";
+	}
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
