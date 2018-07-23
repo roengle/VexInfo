@@ -129,7 +129,12 @@ public class Team {
 		this.number = result.getString("number");
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
-		this.teamLocation = result.getString("city") + ", " + result.getString("region") + ", " + result.getString("country");
+		//Format location properly
+		if(!result.getString("region").equals("")) {
+			this.teamLocation = result.getString("city") + ", " + result.getString("region") + ", " + result.getString("country");
+		}else {
+			this.teamLocation = result.getString("city") + ", " + result.getString("country");
+		}
 		this.teamLink = "https://vexdb.io/teams/view/" + this.number;
 	}
 	

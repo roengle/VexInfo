@@ -7,7 +7,6 @@ public class Tester {
 		//Essentially grab all data and set it(constructor body calls get and set methods)
 		String eventLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-17-3805.html";
 		@SuppressWarnings("unused")
-		//TeamAPI api = new TeamAPI(spreadsheetId, eventLink);
 		TeamAPI api = new TeamAPI(eventLink);
 	}
 }

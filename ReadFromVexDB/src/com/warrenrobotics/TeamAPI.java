@@ -173,8 +173,8 @@ public class TeamAPI {
 		this.spreadsheetURL = response.getSpreadsheetUrl();
 		//Get how long algorithmn has taken
 		long timeTaken = System.currentTimeMillis() - curTime;
-		//Print success message
-		System.out.println("SHEET CREATED - " + this.spreadsheetId + " (" + timeTaken + " ms)");
+		//Print success message(Format below)
+		System.out.printf("Sheet Created In %d ms%n%s%n", timeTaken, this.spreadsheetURL);
 	}
 	
 	/**
@@ -223,7 +223,7 @@ public class TeamAPI {
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.println("INIT - " + teamList.length + " TEAMS");
+		System.out.printf("Initialize - %d Teams%n", teamList.length);
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Time how long each loop takes
@@ -291,6 +291,7 @@ public class TeamAPI {
 				range = "Sheet1!A" + (i + 2) + ":S" + (i + 3);
 				//Setup print message
 				printMsg = "COLUMN#" + (i + 2) + "," + (i + 3) + " STATS UPDATED: " + t1.number + "," + t2.number + "(";
+				//Increment counter since we go by two's in this mode
 				i++;
 			}
 			//Configure body as a ValueRange object
@@ -307,14 +308,14 @@ public class TeamAPI {
 			//Grab how long it took
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print out success message
-			System.out.print(printMsg + timeTaken + " ms)\n");
+			System.out.printf("%s%d ms)%n", printMsg, timeTaken);
 		}
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
 		double runtimeInSeconds = (double)runtime/1000;
 		//Print success message
-		System.out.println("SUCCESS - " + teamList.length + " TEAMS UPDATED IN " + runtimeInSeconds + " SECONDS");
+		System.out.printf("Success - %d TEAMS UPDATED IN %f SECONDS%n", teamList.length, runtimeInSeconds);
 		//Print URL
 		System.out.println(this.spreadsheetURL);
 	}
