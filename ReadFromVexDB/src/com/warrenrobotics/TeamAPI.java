@@ -158,6 +158,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
+		System.out.printf("Creating Spreadsheet for Event:%n%s%n", this.eventName);
 		//Time how long algorithmn takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
@@ -290,7 +291,7 @@ public class TeamAPI {
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
 				range = "Sheet1!A" + (i + 2) + ":S" + (i + 3);
 				//Setup print message
-				printMsg = "COLUMN#" + (i + 2) + "," + (i + 3) + " STATS UPDATED: " + t1.number + "," + t2.number + "(";
+				printMsg = String.format("COLUMN# %d,%d STATS UPDATED: %s, %s(", (i+2), (i+3), t1.number, t2.number);
 				//Increment counter since we go by two's in this mode
 				i++;
 			}
@@ -436,83 +437,31 @@ public class TeamAPI {
 		//4.
 		arr[4] = t.getTeamLink();
 		//5.
-		if(t.fieldIndicators.get("opr") == true) {
-			arr[5] = Double.toString(t.getAvgOPR());
-		}else {
-			arr[5] = "NOT_FOUND";
-		}
+		arr[5] = t.fieldIndicators.get("opr") ? Double.toString(t.getAvgOPR()) : "NOT_FOUND";
 		//6.
-		if(t.fieldIndicators.get("dpr") == true) {
-			arr[6] = Double.toString(t.getAvgDPR());
-		}else {
-			arr[6] = "NOT_FOUND";
-		}
+		arr[6] = t.fieldIndicators.get("dpr") ? Double.toString(t.getAvgDPR()) : "NOT_FOUND";
 		//7.
-		if(t.fieldIndicators.get("ccwm") == true) {
-			arr[7] = Double.toString(t.getAvgCCWM());
-		}else {
-			arr[7] = "NOT_FOUND";
-		}
+		arr[7] = t.fieldIndicators.get("ccwm") ? Double.toString(t.getAvgCCWM()) : "NOT_FOUND";
 		//8.
-		if(t.fieldIndicators.get("ap") == true) {
-			arr[8] = Integer.toString(t.getAvgAP());
-		}else {
-			arr[8] = "NOT_FOUND";
-		}
+		arr[8] = t.fieldIndicators.get("ap") ? Double.toString(t.getAvgAP()) : "NOT_FOUND";
 		//9.
-		if(t.fieldIndicators.get("ap") == true) {
-			arr[9] = Integer.toString(t.getAvgSP());
-		}else {
-			arr[9] = "NOT_FOUND";
-		}
+		arr[9] = t.fieldIndicators.get("sp") ? Integer.toString(t.getAvgSP()) : "NOT_FOUND";
 		//10.
-		if(t.fieldIndicators.get("trsp") == true) {
-			arr[10] = Integer.toString(t.getAvgTRSP());
-		}else {
-			arr[10] = "NOT_FOUND";
-		}
+		arr[10] = t.fieldIndicators.get("trsp") ? Integer.toString(t.getAvgTRSP()) : "NOT_FOUND";
 		//11.
-		if(t.fieldIndicators.get("vrating_rank") == true) {
-			arr[11] = Integer.toString(t.getvrating_rank());
-		}else {
-			arr[11] = "NOT_FOUND";
-		}
+		arr[11] = t.fieldIndicators.get("vrating_rank") ? Integer.toString(t.getvrating_rank()) : "NOT_FOUND";
 		//12.
-		if(t.fieldIndicators.get("vrating") == true) {
-			arr[12] = Double.toString(t.getvrating());
-		}else {
-			arr[12] = "NOT_FOUND";
-		}
+		arr[12] = t.fieldIndicators.get("vrating") ? Double.toString(t.getvrating()) : "NOT_FOUND";
 		//13.
-		if(t.fieldIndicators.get("rank") == true) {
-			arr[13] = Integer.toString(t.getAvgRank());
-		}else {
-			arr[13] = "NOT_FOUND";
-		}
+		arr[13] = t.fieldIndicators.get("rank") ? Integer.toString(t.getAvgRank()) : "NOT_FOUND";
 		//14.
-		if(t.fieldIndicators.get("skills_auton") == true) {
-			arr[14] = Integer.toString(t.getAvgSkillsScore_auton());
-		}else {
-			arr[14] = "NOT_FOUND";
-		}
+		arr[14] = t.fieldIndicators.get("skills_auton") ? Integer.toString(t.getAvgSkillsScore_auton()) : "NOT_FOUND";
 		//15.
-		if(t.fieldIndicators.get("skills_robot") == true) {
-			arr[15] = Integer.toString(t.getAvgSkillsScore_robot());
-		}else {
-			arr[15] = "NOT_FOUND";
-		}
+		arr[15] = t.fieldIndicators.get("skills_robot") ? Integer.toString(t.getAvgSkillsScore_robot()) : "NOT_FOUND";
 		//16.
-		if(t.fieldIndicators.get("skills_combined") == true) {
-			arr[16] = Integer.toString(t.getAvgSkillsScore_combined());
-		}else {
-			arr[16] = "NOT_FOUND";
-		}
+		arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : "NOT_FOUND";
 		//17.
-		if(t.fieldIndicators.get("max_score") == true) {
-			arr[17] = Integer.toString(t.getAvgMaxScore());
-		}else {
-			arr[17] = "NOT_FOUND";
-		}
+		arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : "NOT_FOUND";
 		//18.
 		arr[18] = Integer.toString(t.getNumEvents());
 	}
