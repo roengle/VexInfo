@@ -737,7 +737,7 @@ public class Team {
 	public static class TeamBuilder{
 		//Name
 		public String teamNumber;
-		//Season(wont appear, only used for grabbing data)
+		//Season(wont appear in spreadsheet, only used for grabbing data)
 		public String season;
 		//JSON Array Data
 		public JSONArray tData_teams;
@@ -751,7 +751,7 @@ public class Team {
 		 * 
 		 * @param teamName the number of the team(IE: "90241B")
 		 * @param season the season to get stats for(IE: "In The Zone")
-		 * @throws JSONException for when JSON API encounters error
+		 * @throws JSONException for when the JSON API encounters error
 		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder(String teamNumber, String season) throws JSONException, IOException {

@@ -1,29 +1,32 @@
 package com.warrenrobotics;
 
+import java.io.IOException;
+import java.net.URL;
+import java.security.GeneralSecurityException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.google.api.client.auth.oauth2.TokenResponse;
-import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.Permission;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
-
-import java.io.IOException;
-import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.util.Arrays;
-import java.util.List;
-
-import org.json.JSONObject;
-import org.json.JSONArray;
-import org.json.JSONException;
 
 /**
  * Interacts with Google Sheets using the Google Sheets API v4 to automatically 
@@ -38,16 +41,22 @@ import org.json.JSONException;
  *
  */
 public class TeamAPI {
-	//Instance variables
+	//Spreadsheet/user information
 	private String spreadsheetId; 
 	private String spreadsheetURL;
+	private String usrEmail;
+	//Event information
 	private String season;
 	private String eventName;
-	private String accessToken;
-	private ValueRange response; //Currently depreciated
 	private String[] teamList;
 	private String sku;
-	
+	//Authentication information
+	private String accessToken_sheets;
+	private String accessToken_drive;
+	private ValueRange response; //Currently depreciated
+	private GoogleCredential credential_sheets;
+	private GoogleCredential credential_drive;
+	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	
 	/**
@@ -56,19 +65,31 @@ public class TeamAPI {
 	 * @param spreadsheetId the id of the spreadsheet(commonly found in the link of the spreadsheet)
 	 * @param link the URL of the RobotEvents page
 	 */
-	public TeamAPI(String link) throws IOException, GeneralSecurityException, InterruptedException{
-		//Set spreadsheet id
-		//this.spreadsheetId = spreadsheetId;
+	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
+		//Print date of start time
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.printf("%s - Running Program%n", dateFormat.format(date));
+		//Set user email
+		this.usrEmail = usrEmail;
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
-		//Assign access token
-		setAccessToken();
-		//Create sheet service and request data using it
+		//Assign access tokenS
+		setAccessToken_sheets();
+		setAccessToken_drive();
+		//Assign credentials
+		setCredential_sheets();
+		setCredential_drive();
+		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService();
+		//Create drive service with authenticated credential
+		Drive driveService = createDriveService();
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Transfer ownership
+		transferOwnership(driveService);
 	}
 	
 	/*
@@ -80,49 +101,122 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Creates a sheets service that can be used to make a request for data
+	 * Builds and sets an authenticated credential for a Sheets objects
+	 * 
+	 * @throws GeneralSecurityException
+	 * @throws IOException
+	 */
+	private void setCredential_sheets() throws GeneralSecurityException, IOException {
+		//Create new transport
+		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+	    //Print message
+		System.out.println("Building authenticated credential(Sheets API)...");
+		//Build authenticated credential
+		GoogleCredential newCredential = new GoogleCredential.Builder()
+				.setTransport(httpTransport)
+				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
+				.build()
+				.setAccessToken(this.accessToken_sheets);
+		this.credential_sheets = newCredential;
+	}
+	
+	/**
+	 * Builds and sets an authenticated credential for a Drive object
+	 * 
+	 * @throws GeneralSecurityException
+	 * @throws IOException for when an I/O error occurs
+	 */
+	private void setCredential_drive() throws GeneralSecurityException, IOException {
+		//Create new transport
+		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+	    //Print message
+		System.out.println("Building authenticated credential(Drive API)...");
+		//Build authenticated credential
+		GoogleCredential newCredential = new GoogleCredential.Builder()
+				.setTransport(httpTransport)
+				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
+				.build()
+				.setAccessToken(this.accessToken_drive);
+		this.credential_drive = newCredential;
+	}
+	
+	/**
+	 * Creates a Sheets object that can be used to make a request for data
 	 * 
 	 * @return a Sheets object that can be used to grab and write data
-	 * @throws IOException
+	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
 	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
 		//Create new transport
-		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-	    //Build authenticated credential
-	    GoogleCredential credential = new GoogleCredential.Builder()
-	    		.setTransport(httpTransport)
-	    		.setJsonFactory(jsonFactory)
-	    		.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
-	    		.build();
-	    credential.setAccessToken(this.accessToken).setRefreshToken(Constants.GOOGLE_REFRESH_TOKEN);
+		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 	    //Build a Sheets object and return it
-	    return new Sheets.Builder(httpTransport, jsonFactory, credential)
-	        .setApplicationName("https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.file")
+	    return new Sheets.Builder(httpTransportSheets, jsonFactory, this.credential_sheets)
+	        .setApplicationName("VexInfo.io - Sheets Usage")
 	        .build();
+	}
+	
+	/**
+	 * Creates a Drive object that can be used to make a request for data
+	 * 
+	 * @return a Drive object that can be used to edit permissions
+	 * @throws IOException for when an I/O error occurs
+	 * @throws GeneralSecurityException
+	 */
+	private Drive createDriveService() throws IOException, GeneralSecurityException{
+		//Create new transport
+		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
+		//Build drive object and return it
+		return new Drive.Builder(httpTransportDrive, jsonFactory, this.credential_drive)
+				.setApplicationName("VexInfo.io - Drive Usage")
+				.build();
 	}
 
 	/**
-	 * Retrieves an access token using the refresh token
+	 * Retrieves an access token using the refresh token for the Sheets API
 	 * 
-	 * @return an access token that can be used to create a proper credential
+	 * @throws IOException for when an I/O error occurs
+	 * @GeneralSecurityException 
 	 */
-	public void setAccessToken() throws IOException, GeneralSecurityException, TokenResponseException{
+	public void setAccessToken_sheets() throws IOException, GeneralSecurityException{
 		/*
 		 * Note to users who plan to use this:
 		 * 
 		 * On Github, the Constants.java file will not show since I put it in 
 		 * git ignore, due to it having sensitive data. In order to use this on
 		 * your own, make a new file Constants.java as an interface, and simply input
-		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET", as well as 
-		 * "GOOGLE_REFRESH_TOKEN".
+		 * the values "GOOGLE_CLIENT_ID_SHEETS" and "GOOGLE_CLIENT_SECRET_SHEETS", as well as 
+		 * "GOOGLE_REFRESH_TOKEN_SHEETS".
 		 */
 		//Create a token response using refresh token and oauth credentials
-		TokenResponse response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.GOOGLE_REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
+		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
+				Constants.GOOGLE_REFRESH_TOKEN_SHEETS, Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
 				.execute();
 		//Set the access token
-		this.accessToken = response.getAccessToken();   
+		this.accessToken_sheets = token_response.getAccessToken();   
+	}
+	
+	/**
+	 * Retrieves an access token using the refresh token for the Drive API
+	 * @throws IOException
+	 * @throws GeneralSecurityException
+	 */
+	public void setAccessToken_drive() throws IOException, GeneralSecurityException {
+		/*
+		 * Note to users who plan to use this:
+		 * 
+		 * On Github, the Constants.java file will not show since I put it in 
+		 * git ignore, due to it having sensitive data. In order to use this on
+		 * your own, make a new file Constants.java as an interface, and simply input
+		 * the values "GOOGLE_CLIENT_ID_DRIVE" and "GOOGLE_CLIENT_SECRET_DRIVE", as well as 
+		 * "GOOGLE_REFRESH_TOKEN_DRIVE".
+		 */
+		//Create a token response using refresh token and oauth credentials
+		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
+				Constants.GOOGLE_REFRESH_TOKEN_DRIVE, Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
+				.execute();
+		//Set the access token
+		this.accessToken_drive = token_response.getAccessToken();
 	}
 	
 	//IMPLEMENT LATER - GETTING TOKENS FROM AUTHORIZATION CODE USING POST
@@ -158,7 +252,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
-		System.out.printf("Creating Spreadsheet for Event:%n%s%n", this.eventName);
+		System.out.printf("Creating Spreadsheet for Event...%nEvent Name: %s%n", this.eventName);
 		//Time how long algorithmn takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
@@ -218,13 +312,14 @@ public class TeamAPI {
 		//Configure body for request as ValueRange
 		ValueRange topBody = new ValueRange().setValues(topValues);
 		//Build request and execute
+		@SuppressWarnings("unused")
 		UpdateValuesResponse topResult = 
 				sheetsService.spreadsheets().values().update(this.spreadsheetId, "Sheet1!A1:S1", topBody)
 				.setValueInputOption("USER_ENTERED")
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.printf("Initialize - %d Teams%n", teamList.length);
+		System.out.printf("Initialize - %d Teams%n-----------------------------------------------------%n", teamList.length);
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Time how long each loop takes
@@ -291,7 +386,7 @@ public class TeamAPI {
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
 				range = "Sheet1!A" + (i + 2) + ":S" + (i + 3);
 				//Setup print message
-				printMsg = String.format("COLUMN# %d,%d STATS UPDATED: %s, %s(", (i+2), (i+3), t1.number, t2.number);
+				printMsg = String.format("COLUMN# %d,%d UPDATED: %s, %s(", (i+2), (i+3), t1.number, t2.number);
 				//Increment counter since we go by two's in this mode
 				i++;
 			}
@@ -299,17 +394,24 @@ public class TeamAPI {
 			ValueRange body = new ValueRange().setValues(values);
 			//Reserve quota(currently disabled, quota was updated by google)
 			//apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
+			//Time how long write request takes
+			long tTime = System.currentTimeMillis();
 			//Send write request and receive response
 			@SuppressWarnings("unused")
 			UpdateValuesResponse result = 
-					sheetsService.spreadsheets().values().update(this.spreadsheetId, range, body)
+					sheetsService.spreadsheets().values()
+					.update(this.spreadsheetId, range, body)
 					.setValueInputOption("USER_ENTERED")
 					.setIncludeValuesInResponse(false)
 					.execute();
-			//Grab how long it took
-			long timeTaken = System.currentTimeMillis() - sTime;
+			//Grab current time
+			long nextTime = System.currentTimeMillis();
+			//Grab how long it took in total
+			long timeTakenTotal = nextTime - sTime;
+			//Grab how long it took for just the write request
+			long timeTakenWrite = nextTime - tTime;
 			//Print out success message
-			System.out.printf("%s%d ms)%n", printMsg, timeTaken);
+			System.out.printf("%s%dms total, %dms write)%n", printMsg, timeTakenTotal, timeTakenWrite);
 		}
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
@@ -317,8 +419,49 @@ public class TeamAPI {
 		double runtimeInSeconds = (double)runtime/1000;
 		//Print success message
 		System.out.printf("Success - %d TEAMS UPDATED IN %f SECONDS%n", teamList.length, runtimeInSeconds);
-		//Print URL
-		System.out.println(this.spreadsheetURL);
+		//Print break
+		System.out.println("-----------------------------------------------------");
+	}
+	/*
+	------------------------------------------------------------------------------------------
+	//																						//
+	//									  DRIVE METHODS										//
+	//																						//
+	------------------------------------------------------------------------------------------
+	*/
+	
+	/**
+	 * Transfers the ownership of the Google Sheet to usrEmail, which is specified
+	 * in the constructor of {@link TeamAPI}
+	 * 
+	 * @param driveService an authenticated Drive object
+	 * @throws IOException for when an I/O error occurs
+	 */
+	private void transferOwnership(Drive driveService) throws IOException {
+		//Print message
+		System.out.printf("Transferring ownership to %s%n", this.usrEmail);
+		//Time how long it takes
+		long curTime = System.currentTimeMillis();
+		//Build request body
+		Permission body = new Permission()
+				.setRole("owner")
+				.setType("user")
+				.setEmailAddress(this.usrEmail);
+		//Execute Drive request
+		@SuppressWarnings("unused")
+		Permission permission = driveService.permissions().create(this.spreadsheetId, body)
+				.setFileId(this.spreadsheetId)
+				.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
+				.setSendNotificationEmail(true)
+				.setSupportsTeamDrives(true)
+				.setTransferOwnership(true)
+				.setUseDomainAdminAccess(false)
+				.setFields("emailAddress")
+				.execute();
+		//Time taken
+		double timeTaken = ((double)System.currentTimeMillis() - curTime)/1000;
+		//Print message
+		System.out.printf("Ownership transferred to %s(%f ms)%n", this.usrEmail, timeTaken);
 	}
 	
 	/*
@@ -337,6 +480,7 @@ public class TeamAPI {
 	 * 
 	 * @return the team names as an array of strings
 	 */
+	@SuppressWarnings("unused")
 	private void processResponseIntoTeamList() {
 		//Build string from ValueRange
 		String responseStr = this.response.toString();
@@ -504,6 +648,6 @@ public class TeamAPI {
 	public List<String> getTeamList() { return Arrays.asList(this.teamList); }
 	
 	public String toString() {
-		return "VexInfo.io - " + this.eventName + " (" + this.spreadsheetId + ")";
+		return String.format("VexInfo.io - %s (%s)", this.eventName, this.spreadsheetId);
 	}
 }
