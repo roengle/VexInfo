@@ -20,8 +20,11 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+
 import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.Permission;
+
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
@@ -29,12 +32,13 @@ import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
 /**
+ * <p>
  * Interacts with Google Sheets using the Google Sheets API v4 to automatically 
- * assign certain statistics to them.<br><br>
- * 
- * 
+ * assign certain statistics to them.
+ * </p>
+ * <p>
  * This class is responsible for all interactions with Google Sheets.
- * 
+ * </p>
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.2
  * @since 2018-02-21
@@ -56,6 +60,7 @@ public class TeamAPI {
 	private ValueRange response; //Currently depreciated
 	private GoogleCredential credential_sheets;
 	private GoogleCredential credential_drive;
+	private String permissionId;
 	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	
@@ -198,6 +203,7 @@ public class TeamAPI {
 	
 	/**
 	 * Retrieves an access token using the refresh token for the Drive API
+	 * 
 	 * @throws IOException
 	 * @throws GeneralSecurityException
 	 */
@@ -273,11 +279,13 @@ public class TeamAPI {
 	}
 	
 	/**
-	 * Executes a get request for all data in the spreadsheet<br><br>
+	 * <p>
+	 * Executes a get request for all data in the spreadsheet
+	 * </p>
 	 * 
-	 * CURRENTLY DEPRECIATED UNTIL FURTHER NOTICE. 
-	 * MAY BE USED IN THE EVENT THAT A USER WOULD WANT TO MAKE A SPREADSHEET WITH ONLY SPECIFIC TEAMS
-	 * 
+	 * <p>
+	 * Currently depreciated
+	 * </p>
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
@@ -319,7 +327,7 @@ public class TeamAPI {
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.printf("Initialize - %d Teams%n-----------------------------------------------------%n", teamList.length);
+		System.out.printf("Initialize - %d Teams%n-----------------------------------------------------------%n", teamList.length);
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Time how long each loop takes
@@ -420,7 +428,7 @@ public class TeamAPI {
 		//Print success message
 		System.out.printf("Success - %d TEAMS UPDATED IN %f SECONDS%n", teamList.length, runtimeInSeconds);
 		//Print break
-		System.out.println("-----------------------------------------------------");
+		System.out.println("-----------------------------------------------------------");
 	}
 	/*
 	------------------------------------------------------------------------------------------
@@ -431,6 +439,23 @@ public class TeamAPI {
 	*/
 	
 	/**
+	 * Sets the permission ID for the current email on the Drive object
+	 * 
+	 * @param driveService the authenticated Drive object
+	 * @throws IOException for when an I/O error occurs
+	 */
+	private void setPermissionId(Drive driveService) throws IOException {
+		//Create About object which holds permission Id for current Drive auth
+		About response = driveService.about().get()
+		.setFields("user/permissionId")
+		.execute();
+		//Set permission id
+		this.permissionId = new JSONObject(response.toString())
+				.getJSONObject("user")
+				.getString("permissionId");
+	}
+	
+	/**
 	 * Transfers the ownership of the Google Sheet to usrEmail, which is specified
 	 * in the constructor of {@link TeamAPI}
 	 * 
@@ -438,6 +463,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private void transferOwnership(Drive driveService) throws IOException {
+		setPermissionId(driveService);
 		//Print message
 		System.out.printf("Transferring ownership to %s%n", this.usrEmail);
 		//Time how long it takes
@@ -447,7 +473,7 @@ public class TeamAPI {
 				.setRole("owner")
 				.setType("user")
 				.setEmailAddress(this.usrEmail);
-		//Execute Drive request
+		//Execute Drive request to transfer ownership
 		@SuppressWarnings("unused")
 		Permission permission = driveService.permissions().create(this.spreadsheetId, body)
 				.setFileId(this.spreadsheetId)
@@ -458,10 +484,17 @@ public class TeamAPI {
 				.setUseDomainAdminAccess(false)
 				.setFields("emailAddress")
 				.execute();
+		//Execute drive request to remove current email from sheet
+		driveService.permissions().delete(this.spreadsheetId,  this.permissionId)
+				.setFileId(this.spreadsheetId)
+				.setPermissionId(this.permissionId)
+				.setSupportsTeamDrives(true)
+				.setUseDomainAdminAccess(false)
+				.execute();
 		//Time taken
-		double timeTaken = ((double)System.currentTimeMillis() - curTime)/1000;
+		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print message
-		System.out.printf("Ownership transferred to %s(%f ms)%n", this.usrEmail, timeTaken);
+		System.out.printf("Ownership transferred to %s(%d ms)%n", this.usrEmail, timeTaken);
 	}
 	
 	/*
@@ -473,11 +506,13 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])<br><br>
+	 * <p>
+	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])
+	 * </p>
 	 * 
-	 * CURRENTLY DEPRECIATED UNTIL FURTHER NOTICE. 
-	 * MAY BE USED IN THE EVENT THAT A USER WOULD WANT TO MAKE A SPREADSHEET WITH ONLY SPECIFIC TEAMS
-	 * 
+	 * <p>
+	 * Currently depreciated
+	 * </p>
 	 * @return the team names as an array of strings
 	 */
 	@SuppressWarnings("unused")
@@ -500,18 +535,23 @@ public class TeamAPI {
 	}
 	
 	/**
+	 * <p>
 	 * Processes a RobotEvents.com link to be able to get an events SKU, 
 	 * the season for that event, the name of the event, and a team list
-	 * for the event.<br><br>
+	 * for the event.
+	 * </p>
 	 * 
+	 * <p>
 	 * <b>Note:</b> Team lists can only be generated <u>4 weeks</u> before the start date
 	 * of the tournament
+	 * </p>
 	 * 
 	 * @param s the URL of the robot events link
 	 * @throws JSONException for when JSON API encounters error
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private void processLink(String s) throws JSONException, IOException {
+		//TODO: Make checking for 4-weeks prior to tournament a thing. Links entered before will return empty data
 		//Create URL from link
 		URL link = new URL(s);
 		//Get file path of url
