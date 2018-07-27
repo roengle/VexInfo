@@ -65,21 +65,25 @@ public class TeamAPI {
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	
 	/**
-	 * Constructs a TeamAPI object to interpret data from a Google Sheets using the Google Sheets API v4
+	 * Constructs a TeamAPI object to write data to a Google Sheet using the Google Sheets API v4
+	 * and the Google Drive API v3
 	 * 
-	 * @param spreadsheetId the id of the spreadsheet(commonly found in the link of the spreadsheet)
 	 * @param link the URL of the RobotEvents page
+	 * @param usrEmail the email of the user who will be give ownership of the sheet
+	 * @throws IOException for when an I/O error occurs
+	 * @throws GeneralSecurityException
+	 * @throws InterruptedException for when a working thread is interrupted
 	 */
 	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 		Date date = new Date();
 		System.out.printf("%s - Running Program%n", dateFormat.format(date));
 		//Set user email
 		this.usrEmail = usrEmail;
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
-		//Assign access tokenS
+		//Assign access tokens
 		setAccessToken_sheets();
 		setAccessToken_drive();
 		//Assign credentials
@@ -181,7 +185,7 @@ public class TeamAPI {
 	 * Retrieves an access token using the refresh token for the Sheets API
 	 * 
 	 * @throws IOException for when an I/O error occurs
-	 * @GeneralSecurityException 
+	 * @throws GeneralSecurityException 
 	 */
 	public void setAccessToken_sheets() throws IOException, GeneralSecurityException{
 		/*
@@ -204,7 +208,7 @@ public class TeamAPI {
 	/**
 	 * Retrieves an access token using the refresh token for the Drive API
 	 * 
-	 * @throws IOException
+	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
 	public void setAccessToken_drive() throws IOException, GeneralSecurityException {
@@ -430,6 +434,7 @@ public class TeamAPI {
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -559,7 +564,8 @@ public class TeamAPI {
 		//Get and set event code
 		this.sku = filePath[filePath.length - 1].replaceAll(".html", "");
 		//Get and set season from API
-		JSONObject eventJson = Team.TeamBuilder.readJsonFromUrl("https://api.vexdb.io/v1/get_events?sku=" + this.sku)
+		JSONObject eventJson = Team.TeamBuilder
+				.readJsonFromUrl("https://api.vexdb.io/v1/get_events?sku=" + this.sku)
 				.getJSONArray("result")
 				.getJSONObject(0);
 		this.season = eventJson.getString("season");
@@ -574,6 +580,7 @@ public class TeamAPI {
 		for(int i = 0; i < result.length(); i++) {
 			teams[i] = result.getJSONObject(i).getString("number");
 		}
+		//Set team list
 		this.teamList = teams;
 	}
 	
@@ -609,7 +616,6 @@ public class TeamAPI {
 	
 	@SuppressWarnings("static-access")
 	private void buildValues(String[] arr, Team t) {
-		//TODO: Iteravely build a list instead of setting individual values
 		//0.
 		arr[0] = t.getNumber();
 		//1.
@@ -650,7 +656,12 @@ public class TeamAPI {
 		arr[18] = Integer.toString(t.getNumEvents());
 	}
 	
-	public void putNames(String[] a) {
+	/**
+	 * Defaults the first column of the spreadsheet to proper values
+	 * 
+	 * @param a the array of strings that will be used for the first column
+	 */
+	private void putNames(String[] a) {
 		//Represents column #1 of the spreadsheet
 		a[0] = "Team";
 		a[1] = "Team Name";
@@ -687,6 +698,9 @@ public class TeamAPI {
 	 */
 	public List<String> getTeamList() { return Arrays.asList(this.teamList); }
 	
+	/**
+	 * Returns the event name and spreadsheet ID of the current {@link TeamAPI} instance
+	 */
 	public String toString() {
 		return String.format("VexInfo.io - %s (%s)", this.eventName, this.spreadsheetId);
 	}

@@ -13,10 +13,12 @@ import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
 /**
+ * <p>
  * This class allows for team statistics to be parsed and stored. 
+ * </p>
+ * <p>Current statistics:</p>
  * <ul>
- * 		<b>Current statistics:</b>
- * 		<ul>
+ * 		
  * 			<li>Average OPR</li>
  * 			<li>Average DPR</li>
  * 			<li>Average CCWM</li>
@@ -31,12 +33,14 @@ import java.nio.charset.Charset;
  * 			<li>Average Skills Score - Autonomous</li>
  * 			<li>Average Skills Score - Robot</li>
  *			<li>Average Skills Score - Combined</li>
- *		</ul>
  * </ul>
- * This class is responsible for calculating and storing statistics for a given VEX team.<br><br>
+ * <p>
+ * This class is responsible for calculating and storing statistics for a given VEX team.
+ * </p>
  * 
- * The TeamBuilder class(line 690) is responsible for building a Team object.
- * 
+ * <p>
+ * The {@link TeamBuilder} class is responsible for building a Team object.
+ * </p>
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.2
  * @since 2018-02-21
@@ -51,7 +55,7 @@ public class Team {
 	private JSONArray tData_rankings;
 	private JSONObject tData_events; 
 	private JSONArray tData_season_rankings;
-	public JSONArray tData_skills;
+	private JSONArray tData_skills;
 	//Data - Teams
 	public String number; //IE: 90241B
 	public String teamName; //IE: Warren WarBots II 
@@ -125,16 +129,17 @@ public class Team {
 	 * Sets information about the team itself
 	 */
 	private void performCalculations_teams() {
+		//Get team information
 		JSONObject result = tData_teams.getJSONObject(0);
+		//Set team information
 		this.number = result.getString("number");
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
 		//Format location properly
-		if(!result.getString("region").equals("")) {
-			this.teamLocation = result.getString("city") + ", " + result.getString("region") + ", " + result.getString("country");
-		}else {
-			this.teamLocation = result.getString("city") + ", " + result.getString("country");
-		}
+		this.teamLocation = !result.getString("region").equals("") ? 
+				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country")) //If true
+				:
+				String.format("%s, %s", result.getString("city"), result.getString("country"));	//If false
 		this.teamLink = "https://vexdb.io/teams/view/" + this.number;
 	}
 	
@@ -673,13 +678,6 @@ public class Team {
 	public int getAvgTRSP() { return this.avgTRSP; }
 	
 	/**
-	 * Retrieves the number of events a team has competed in during the season
-	 * 
-	 * @return the number of events
-	 */
-	public int getNumEvents() { return this.numEvents; }
-	
-	/**
 	 * Retrieves the vrating rankings of a team in the season
 	 * 
 	 * @return the vrating ranking
@@ -715,6 +713,13 @@ public class Team {
 	public int getAvgSkillsScore_combined() { return this.avgSkillsScore_combined; }
 	
 	/**
+	 * Retrieves the number of events a team has competed in during the season
+	 * 
+	 * @return the number of events
+	 */
+	public int getNumEvents() { return this.numEvents; }
+	
+	/**
 	 * A toString method that simply returns the team name
 	 */
 	public String toString() { return "Team " + this.number; }
@@ -727,12 +732,12 @@ public class Team {
 	------------------------------------------------------------------------------------------
 	*/
 	/**
-	 * A Builder method that is used to create a Team object. All fields/method calls in the class are 
+	 * A Builder method that is used to create a {@link Team} object. All fields/method calls in the class are 
 	 * required, as a Builder class was used to reduce the amount of files to keep track of. 
 	 * 
 	 * @author Robert Engle | WHS Robotics | Team 90241B
 	 * @version 1.1
-	 * @since 2018-10-8
+	 * @since 1.1
 	 */
 	public static class TeamBuilder{
 		//Name
@@ -749,7 +754,7 @@ public class Team {
 		/**
 		 * Constructs a TeamBuilder object. Is the only way to make a Team object. 
 		 * 
-		 * @param teamName the number of the team(IE: "90241B")
+		 * @param teamNumber the number of the team(IE: "90241B")
 		 * @param season the season to get stats for(IE: "In The Zone")
 		 * @throws JSONException for when the JSON API encounters error
 		 * @throws IOException for when an I/O error occurs
@@ -820,13 +825,13 @@ public class Team {
 		}
 		
 		/**
-		  * Creates a JSON object by reading a url that contains a JSON output, in this case 
+		  * Creates a {@link JSONObject} by reading a url that contains a JSON output, in this case 
 		  * the URL is from the VexDB.io API
 	      * 
 		  * @param url the url that has the JSON output
 		  * @return a JSONObject created from a JSON output from desired URL
-		  * @throws IOException
-		  * @throws JSONException
+		  * @throws IOException for when an I/O error occurs
+		  * @throws JSONException for when the JSON API encounters an error
 		  */
 		public static JSONObject readJsonFromUrl(String url) throws IOException, JSONException {
 			InputStream is = new URL(url).openStream();
@@ -846,7 +851,7 @@ public class Team {
 		 * 
 		 * @param rd The reader to extrapolate a string from
 		 * @return the whole string outputted from the reader
-		 * @throws IOException
+		 * @throws IOException for when an I/O error occurs
 		 */
 		private static String readAll(Reader rd) throws IOException {
 			StringBuilder sb = new StringBuilder();
