@@ -5,13 +5,14 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -48,21 +49,19 @@ public class TeamAPI {
 	//Spreadsheet/user information
 	private String spreadsheetId; 
 	private String spreadsheetURL;
-	private String usrEmail;
+	public final String usrEmail;
 	//Event information
 	private String season;
 	private String eventName;
+	private String eventDate;
 	private String[] teamList;
 	private String sku;
 	//Authentication information
-	private String accessToken_sheets;
-	private String accessToken_drive;
 	private ValueRange response; //Currently depreciated
-	private GoogleCredential credential_sheets;
-	private GoogleCredential credential_drive;
-	private String permissionId;
 	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+	//Logger
+	private static Logger LOGGER = LoggerFactory.getLogger(TeamAPI.class);
 	
 	/**
 	 * Constructs a TeamAPI object to write data to a Google Sheet using the Google Sheets API v4
@@ -83,16 +82,18 @@ public class TeamAPI {
 		this.usrEmail = usrEmail;
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
+		//Check date to see if it first 4-week restriction
+		checkDate();
 		//Assign access tokens
-		setAccessToken_sheets();
-		setAccessToken_drive();
+		String accessToken_sheets = setAccessToken_sheets();
+		String accessToken_drive = setAccessToken_drive();
 		//Assign credentials
-		setCredential_sheets();
-		setCredential_drive();
+		GoogleCredential credential_sheets = setCredential_sheets(accessToken_sheets);
+		GoogleCredential credential_drive = setCredential_drive(accessToken_drive);
 		//Create sheet service with authenticated credential
-		Sheets sheetsService = createSheetsService();
+		Sheets sheetsService = createSheetsService(credential_sheets);
 		//Create drive service with authenticated credential
-		Drive driveService = createDriveService();
+		Drive driveService = createDriveService(credential_drive);
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
@@ -110,12 +111,12 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Builds and sets an authenticated credential for a Sheets objects
+	 * Builds and returns an authenticated credential for a Sheets objects
 	 * 
 	 * @throws GeneralSecurityException
 	 * @throws IOException
 	 */
-	private void setCredential_sheets() throws GeneralSecurityException, IOException {
+	private GoogleCredential setCredential_sheets(String accessToken) throws GeneralSecurityException, IOException {
 		//Create new transport
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    //Print message
@@ -125,17 +126,17 @@ public class TeamAPI {
 				.setTransport(httpTransport)
 				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
 				.build()
-				.setAccessToken(this.accessToken_sheets);
-		this.credential_sheets = newCredential;
+				.setAccessToken(accessToken);
+		return newCredential;
 	}
 	
 	/**
-	 * Builds and sets an authenticated credential for a Drive object
+	 * Builds and returns an authenticated credential for a Drive object
 	 * 
 	 * @throws GeneralSecurityException
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private void setCredential_drive() throws GeneralSecurityException, IOException {
+	private GoogleCredential setCredential_drive(String accessToken) throws GeneralSecurityException, IOException {
 		//Create new transport
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    //Print message
@@ -145,8 +146,8 @@ public class TeamAPI {
 				.setTransport(httpTransport)
 				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
 				.build()
-				.setAccessToken(this.accessToken_drive);
-		this.credential_drive = newCredential;
+				.setAccessToken(accessToken);
+		return newCredential;
 	}
 	
 	/**
@@ -156,11 +157,11 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
-	private Sheets createSheetsService() throws IOException, GeneralSecurityException {
+	private Sheets createSheetsService(GoogleCredential cred) throws IOException, GeneralSecurityException {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 	    //Build a Sheets object and return it
-	    return new Sheets.Builder(httpTransportSheets, jsonFactory, this.credential_sheets)
+	    return new Sheets.Builder(httpTransportSheets, jsonFactory, cred)
 	        .setApplicationName("VexInfo.io - Sheets Usage")
 	        .build();
 	}
@@ -172,11 +173,11 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
-	private Drive createDriveService() throws IOException, GeneralSecurityException{
+	private Drive createDriveService(GoogleCredential cred) throws IOException, GeneralSecurityException{
 		//Create new transport
 		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
 		//Build drive object and return it
-		return new Drive.Builder(httpTransportDrive, jsonFactory, this.credential_drive)
+		return new Drive.Builder(httpTransportDrive, jsonFactory, cred)
 				.setApplicationName("VexInfo.io - Drive Usage")
 				.build();
 	}
@@ -187,7 +188,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException 
 	 */
-	public void setAccessToken_sheets() throws IOException, GeneralSecurityException{
+	public String setAccessToken_sheets() throws IOException, GeneralSecurityException{
 		/*
 		 * Note to users who plan to use this:
 		 * 
@@ -202,7 +203,7 @@ public class TeamAPI {
 				Constants.GOOGLE_REFRESH_TOKEN_SHEETS, Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
 				.execute();
 		//Set the access token
-		this.accessToken_sheets = token_response.getAccessToken();   
+		return token_response.getAccessToken();   
 	}
 	
 	/**
@@ -211,7 +212,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
-	public void setAccessToken_drive() throws IOException, GeneralSecurityException {
+	public String setAccessToken_drive() throws IOException, GeneralSecurityException {
 		/*
 		 * Note to users who plan to use this:
 		 * 
@@ -226,7 +227,7 @@ public class TeamAPI {
 				Constants.GOOGLE_REFRESH_TOKEN_DRIVE, Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
 				.execute();
 		//Set the access token
-		this.accessToken_drive = token_response.getAccessToken();
+		return token_response.getAccessToken();
 	}
 	
 	//IMPLEMENT LATER - GETTING TOKENS FROM AUTHORIZATION CODE USING POST
@@ -262,7 +263,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
-		System.out.printf("Creating Spreadsheet for Event...%nEvent Name: %s%n", this.eventName);
+		System.out.printf("Creating Spreadsheet for Event%n");
 		//Time how long algorithmn takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
@@ -360,9 +361,9 @@ public class TeamAPI {
 				//Configure body for input
 				values = Arrays.asList(Arrays.asList(valuesArr));
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
-				range = "Sheet1!A" + (i + 2) + ":S" + (i + 2);
+				range = String.format("Sheet1!A%d:S%d", (i + 2), (i + 2));
 				//Setup print message
-				printMsg = "COLUMN#" + (i + 2) + " STATS UPDATED: " + t.number + " (";
+				printMsg = String.format("COLUMN#%d STATS UPDATED: %s (", (i + 2), t.number);
 			}else {//Can still grab two teams without exception
 				//TWO-TEAM SETTING
 				//Grab first team name
@@ -396,7 +397,7 @@ public class TeamAPI {
 				//Configure body for input
 				values = Arrays.asList(Arrays.asList(valuesArr1), Arrays.asList(valuesArr2));
 				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
-				range = "Sheet1!A" + (i + 2) + ":S" + (i + 3);
+				range = String.format("Sheet1!A%d:S%d", (i + 2), (i + 3));
 				//Setup print message
 				printMsg = String.format("COLUMN# %d,%d UPDATED: %s, %s(", (i+2), (i+3), t1.number, t2.number);
 				//Increment counter since we go by two's in this mode
@@ -449,13 +450,13 @@ public class TeamAPI {
 	 * @param driveService the authenticated Drive object
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private void setPermissionId(Drive driveService) throws IOException {
+	private String setPermissionId(Drive driveService) throws IOException {
 		//Create About object which holds permission Id for current Drive auth
 		About response = driveService.about().get()
 		.setFields("user/permissionId")
 		.execute();
-		//Set permission id
-		this.permissionId = new JSONObject(response.toString())
+		//Return the permissionId
+		return new JSONObject(response.toString())
 				.getJSONObject("user")
 				.getString("permissionId");
 	}
@@ -468,7 +469,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private void transferOwnership(Drive driveService) throws IOException {
-		setPermissionId(driveService);
+		String permissionId = setPermissionId(driveService);
 		//Print message
 		System.out.printf("Transferring ownership to %s%n", this.usrEmail);
 		//Time how long it takes
@@ -490,9 +491,9 @@ public class TeamAPI {
 				.setFields("emailAddress")
 				.execute();
 		//Execute drive request to remove current email from sheet
-		driveService.permissions().delete(this.spreadsheetId,  this.permissionId)
+		driveService.permissions().delete(this.spreadsheetId,  permissionId)
 				.setFileId(this.spreadsheetId)
-				.setPermissionId(this.permissionId)
+				.setPermissionId(permissionId)
 				.setSupportsTeamDrives(true)
 				.setUseDomainAdminAccess(false)
 				.execute();
@@ -556,21 +557,26 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private void processLink(String s) throws JSONException, IOException {
-		//TODO: Make checking for 4-weeks prior to tournament a thing. Links entered before will return empty data
 		//Create URL from link
 		URL link = new URL(s);
 		//Get file path of url
 		String[] filePath = link.getPath().split("/");
 		//Get and set event code
-		this.sku = filePath[filePath.length - 1].replaceAll(".html", "");
-		//Get and set season from API
+		this.sku = filePath[filePath.length - 1].replace(".html", "");
+		//Get JSON data from API
 		JSONObject eventJson = Team.TeamBuilder
 				.readJsonFromUrl("https://api.vexdb.io/v1/get_events?sku=" + this.sku)
 				.getJSONArray("result")
 				.getJSONObject(0);
+		//Set event season
 		this.season = eventJson.getString("season");
 		//Set event name
 		this.eventName = eventJson.getString("name");
+		//Print event name
+		System.out.printf("Event Name: %s%n", this.eventName);
+		//Set event date(only grab start day, ignore time)
+		//Format: YYYY-MM-DD
+		this.eventDate = eventJson.getString("start").split("T")[0];
 		//Build JSON array from SKU
 		JSONArray result = Team.TeamBuilder
 				.readJsonFromUrl("https://api.vexdb.io/v1/get_teams?sku=" + this.sku)
@@ -584,6 +590,52 @@ public class TeamAPI {
 		this.teamList = teams;
 	}
 	
+	public void checkDate(){
+		//New Calendar instance
+		Calendar c = Calendar.getInstance();
+		//Set leniency to true, so program could subtract 4 weeks(28 days)
+		//from event date, without the calendar object throwing an exception
+		c.setLenient(true);
+		//Set to start of current day
+		c.set(Calendar.HOUR_OF_DAY, 0);
+		c.set(Calendar.MINUTE, 0);
+		c.set(Calendar.SECOND, 0);
+		c.set(Calendar.MILLISECOND, 0);
+		//Put into date object
+		Date today = c.getTime();
+		//Get event date in an array of strings
+		String[] eventTimeInfoStr = this.eventDate.split("-");
+		//Initialize and convert string array to int array
+		int[] eventTimeInfo = new int[3];
+		for(int i = 0; i < eventTimeInfo.length; i++) {
+			eventTimeInfo[i] = Integer.parseInt(eventTimeInfoStr[i]);
+		}
+		c.set(eventTimeInfo[0], eventTimeInfo[1], eventTimeInfo[2]);
+		Date eventDateActual = c.getTime();
+		//Set event date to exactly 4 weeks(28 days) before its date,
+		//since that is what the program is checking for
+		c.set(eventTimeInfo[0], eventTimeInfo[1], (eventTimeInfo[2] - 28));
+		//Check date with this specified date
+		Date dateSpecified = c.getTime();
+		//If current Date is greater than 4 weeks before the event
+		if(today.before(dateSpecified)) {
+			//Get difference of dates in milliseconds
+			long difInMs = dateSpecified.getTime() - today.getTime();
+			//Convert milliseconds to days(multiply by 8,640,000^-1 ms*s*min*h*days)
+			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
+			//Log the issue
+			LOGGER.error(String.format("Requirement not met. Wait %s days", dayDifference));
+			System.out.println("EXITING PROGRAM");
+			//Stop program
+			System.exit(1);
+		} else { //Date restriction met
+			//Format date Strings
+			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+			System.out.printf("Today's Date: %s%n", df.format(today));
+			System.out.printf("Event's Date(Actual): %s%n", df.format(eventDateActual));
+			System.out.printf("Event's Date(4 Weeks Prior): %s%n", df.format(dateSpecified));
+		}
+	}
 	/**
 	 * Builds values in an array representing certain statistics of the team.
 	 * <ul>

@@ -1,5 +1,5 @@
 package com.warrenrobotics;
-	
+
 //Used in Team class
 import org.json.*;
 import java.util.HashMap;
@@ -14,11 +14,11 @@ import java.net.URL;
 import java.nio.charset.Charset;
 /**
  * <p>
- * This class allows for team statistics to be parsed and stored. 
+ * This class allows for team statistics to be parsed and stored.
  * </p>
  * <p>Current statistics:</p>
  * <ul>
- * 		
+ *
  * 			<li>Average OPR</li>
  * 			<li>Average DPR</li>
  * 			<li>Average CCWM</li>
@@ -37,7 +37,7 @@ import java.nio.charset.Charset;
  * <p>
  * This class is responsible for calculating and storing statistics for a given VEX team.
  * </p>
- * 
+ *
  * <p>
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
@@ -53,12 +53,12 @@ public class Team {
 	//JSON Array Data
 	private JSONArray tData_teams;
 	private JSONArray tData_rankings;
-	private JSONObject tData_events; 
+	private JSONObject tData_events;
 	private JSONArray tData_season_rankings;
 	private JSONArray tData_skills;
 	//Data - Teams
 	public String number; //IE: 90241B
-	public String teamName; //IE: Warren WarBots II 
+	public String teamName; //IE: Warren WarBots II
 	public String teamOrg;
 	public String teamLocation;
 	public String teamLink;
@@ -83,7 +83,7 @@ public class Team {
 	public int avgSkillsScore_robot;
 	public int avgSkillsScore_auton;
 	public int avgSkillsScore_combined;
-	
+
 	//Use static initializer to prevent having to fill with values for every iteration
 	public static Map<String, Boolean> fieldIndicators = new HashMap<>();
 	static {
@@ -102,10 +102,10 @@ public class Team {
 		fieldIndicators.put("vrating_rank", true);
 		fieldIndicators.put("vrating", true);
 	}
-	
+
 	/**
 	 * Constructs a Team object and runs all necessary calculations to compile statistics
-	 * 
+	 *
 	 * @param name the name of the team(IE: 90241B)
 	 * @param tData_rankings the JSONarray acquired from getting JSON array with key "result"
 	 */
@@ -124,7 +124,7 @@ public class Team {
 		performCalculations_season_rankings();
 		performCalculations_skills();
 	}
-	
+
 	/**
 	 * Sets information about the team itself
 	 */
@@ -136,13 +136,13 @@ public class Team {
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
 		//Format location properly
-		this.teamLocation = !result.getString("region").equals("") ? 
+		this.teamLocation = !result.getString("region").equals("") ?
 				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country")) //If true
 				:
 				String.format("%s, %s", result.getString("city"), result.getString("country"));	//If false
 		this.teamLink = "https://vexdb.io/teams/view/" + this.number;
 	}
-	
+
 	/**
 	 * Performs all calculations under the "rankings" category
 	 */
@@ -156,14 +156,14 @@ public class Team {
 		calculateAvgSP();
 		calculateAvgTRSP();
 	}
-	
+
 	/**
 	 * Performs all calculations under the "events" category
 	 */
 	private void performCalculations_events() {
 		setNumEvents();
 	}
-	
+
 	/**
 	 * Performs all calculations under the "season_rankings" category
 	 */
@@ -171,7 +171,7 @@ public class Team {
 		setvrating_rank();
 		setvrating();
 	}
-	
+
 	/**
 	 * Performs all calculations under the "skills" category
 	 */
@@ -180,7 +180,7 @@ public class Team {
 		calculateAvgSkillsScore_robot();
 		calculateAvgSkillsScore_combined();
 	}
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -188,7 +188,7 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+
 	/**
 	 * Calculates the average OPR and sets the classes instance variable to it
 	 */
@@ -216,7 +216,7 @@ public class Team {
 			this.avgOPR = 0.0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average DPR and sets the classes instance variable to it
 	 */
@@ -244,7 +244,7 @@ public class Team {
 			this.avgDPR = 0.0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average CCWM and sets the classes instance variable to it
 	 */
@@ -271,7 +271,7 @@ public class Team {
 			this.avgCCWM = 0.0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average max score and sets the classes instance variable to it
 	 */
@@ -299,16 +299,16 @@ public class Team {
 			this.avgMaxScore = 0;
 		}
 	}
-	
+
 	/**
-	 * Parses through the teams ranks, and sets both the highest ranking and the 
+	 * Parses through the teams ranks, and sets both the highest ranking and the
 	 * average ranking.
 	 */
 	private void calculateRanks(){
 		//Initialize total for average
 		int totalRank = 0;
 		/* Break up array, and search though each ranking. For the average, follow
-		 * the same procedure above. 
+		 * the same procedure above.
 		 */
 		for(int i = 0; i < tData_rankings.length(); i++) {
 			//Grab value
@@ -330,7 +330,7 @@ public class Team {
 			this.avgRank = 0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average autonomous points for a team
 	 */
@@ -359,7 +359,7 @@ public class Team {
 		}
 
 	}
-	
+
 	/**
 	 * Calculates the average skills points for a team
 	 */
@@ -388,7 +388,7 @@ public class Team {
 		}
 
 	}
-	
+
 	/**
 	 * Calculates the average TRSPs (custom ranking method for SPs) for a team
 	 */
@@ -417,7 +417,7 @@ public class Team {
 		}
 
 	}
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -425,12 +425,12 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+
 	/**
 	 * Sets the total number of events a team has competed in within the season
 	 */
 	private void setNumEvents() { this.numEvents = tData_events.getInt("size"); }
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -438,30 +438,30 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+
 	/**
 	 * Sets the team's vrating rank
 	 */
-	private void setvrating_rank() { 
+	private void setvrating_rank() {
 		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
 		if(tData_season_rankings.length() != 0) {
 			//Add indicator
 			fieldIndicators.put("vrating_rank", true);
 			//If nonzero, set properly
-			this.vrating_rank = tData_season_rankings.getJSONObject(0).getInt("vrating_rank"); 
+			this.vrating_rank = tData_season_rankings.getJSONObject(0).getInt("vrating_rank");
 		}else { //Is zero, so vrating rank won't even appear
 			//Add indicator
 			fieldIndicators.put("vrating_rank", false);
 			//If zero, set to zero
 			this.vrating_rank = 0;
 		}
-		
+
 	}
-	
+
 	/**
 	 * Set's the team's vrating
 	 */
-	private void setvrating() { 
+	private void setvrating() {
 		//Check if length of array is nonzero(if zero, trying to grab "vrating_rank" will throw JSONException)
 		if(tData_season_rankings.length() != 0) {
 			//Add indicator
@@ -474,9 +474,9 @@ public class Team {
 			//If zero, set to zero
 			this.vrating = 0.0;
 		}
-		 
+
 	}
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -484,7 +484,7 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+
 	/**
 	 * Calculates the average skills score for autonomous mode
 	 */
@@ -515,7 +515,7 @@ public class Team {
 			this.avgSkillsScore_auton = 0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average skills score for driver control mode
 	 */
@@ -546,7 +546,7 @@ public class Team {
 			this.avgSkillsScore_robot = 0;
 		}
 	}
-	
+
 	/**
 	 * Calculates the average skills score for both autonomous and driver control modes
 	 */
@@ -577,7 +577,7 @@ public class Team {
 			this.avgSkillsScore_combined = 0;
 		}
 	}
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -585,145 +585,145 @@ public class Team {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
+
 	/**
 	 * Retrieves the current team number(IE: "90241B")
-	 * 
+	 *
 	 * @return the team number
 	 */
 	public String getNumber() { return this.number; }
-	
+
 	/**
 	 * Retrieves the current team name(IE: "Warren Warbots II")
-	 * 
+	 *
 	 * @return the team name
 	 */
 	public String getTeamName() { return this.teamName; }
-	
+
 	/**
 	 * Retrieves the current team organization
-	 * 
+	 *
 	 * @return the team organization
 	 */
 	public String getTeamOrg() { return this.teamOrg; }
-	
+
 	/**
 	 * Retrieves the current team location
-	 * 
+	 *
 	 * @return the team location
 	 */
 	public String getTeamLocation() { return this.teamLocation; }
-	
+
 	/**
 	 * Retrieves the current team VexDB link
-	 * 
+	 *
 	 * @return the VexDB.io link for the team
 	 */
 	public String getTeamLink() { return this.teamLink; }
-	
+
 	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
-	 * 
+	 *
 	 * @return the average OPR of the team
 	 */
 	public double getAvgOPR() { return avgOPR; }
-	
+
 	/**
 	 * Retrieves the average DPR for select team(average of all matches in season)
-	 * 
+	 *
 	 * @return the average DPR of the team
 	 */
 	public double getAvgDPR() { return avgDPR; }
-	
+
 	/**
 	 * Retrieves the average DPR for select team(average of all matches in season)
-	 * 
+	 *
 	 * @return the average CCWM of the team
 	 */
 	public double getAvgCCWM() { return avgCCWM; }
-	
+
 	/**
 	 * Retrieves the average max score for select team(of all matches in season)
-	 * 
+	 *
 	 * @return the average max score of the team
 	 */
 	public int getAvgMaxScore() { return avgMaxScore; }
-	
+
 	/**
 	 * Retrieves the average rank that a team has achieved throughout the season
-	 * 
+	 *
 	 * @return the average rank of the team
 	 */
 	public int getAvgRank() { return avgRank; }
-	
+
 	/**
 	 * Retrieves average autonomous points for a team
-	 * 
+	 *
 	 * @return a rounded-down integer of the average autonomous points
 	 */
 	public int getAvgAP() { return this.avgAP; }
-	
+
 	/**
 	 * Retrieves average skills points for a team
-	 * 
+	 *
 	 * @return a rounded-down integer of the average skills points
 	 */
 	public int getAvgSP() { return this.avgSP; }
-	
+
 	/**
 	 * Retrieves average TRSP points for a team
-	 * 
+	 *
 	 * @return a rounded-down integer of the average TRSP points
 	 */
 	public int getAvgTRSP() { return this.avgTRSP; }
-	
+
 	/**
 	 * Retrieves the vrating rankings of a team in the season
-	 * 
+	 *
 	 * @return the vrating ranking
 	 */
 	public int getvrating_rank() { return this.vrating_rank; }
-	
+
 	/**
 	 * Retrieves the vrating of a team in the season
-	 * 
+	 *
 	 * @return the vrating
 	 */
 	public double getvrating() { return this.vrating; }
-	
+
 	/**
 	 * Retrieves the average skills score for autonomous mode
-	 * 
+	 *
 	 * @return the average skills score for autonomous
 	 */
 	public int getAvgSkillsScore_auton() { return this.avgSkillsScore_auton; }
-	
+
 	/**
 	 * Retrieves the average skills score for driver control mode
-	 * 
+	 *
 	 * @return the average skills score for driver control mode
 	 */
 	public int getAvgSkillsScore_robot() { return this.avgSkillsScore_robot; }
-	
+
 	/**
 	 * Retrieves the average skills score for both autonomous and driver control mode
-	 * 
+	 *
 	 * @return the average skills score for both autonomous and driver control mode
 	 */
 	public int getAvgSkillsScore_combined() { return this.avgSkillsScore_combined; }
-	
+
 	/**
 	 * Retrieves the number of events a team has competed in during the season
-	 * 
+	 *
 	 * @return the number of events
 	 */
 	public int getNumEvents() { return this.numEvents; }
-	
+
 	/**
 	 * A toString method that simply returns the team name
 	 */
 	public String toString() { return "Team " + this.number; }
-	
+
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -732,9 +732,9 @@ public class Team {
 	------------------------------------------------------------------------------------------
 	*/
 	/**
-	 * A Builder method that is used to create a {@link Team} object. All fields/method calls in the class are 
-	 * required, as a Builder class was used to reduce the amount of files to keep track of. 
-	 * 
+	 * A Builder method that is used to create a {@link Team} object. All fields/method calls in the class are
+	 * required, as a Builder class was used to reduce the amount of files to keep track of.
+	 *
 	 * @author Robert Engle | WHS Robotics | Team 90241B
 	 * @version 1.1
 	 * @since 1.1
@@ -747,13 +747,13 @@ public class Team {
 		//JSON Array Data
 		public JSONArray tData_teams;
 		public JSONArray tData_rankings;
-		public JSONObject tData_events; 
+		public JSONObject tData_events;
 		public JSONArray tData_season_rankings;
 		public JSONArray tData_skills;
-		
+
 		/**
-		 * Constructs a TeamBuilder object. Is the only way to make a Team object. 
-		 * 
+		 * Constructs a TeamBuilder object. Is the only way to make a Team object.
+		 *
 		 * @param teamNumber the number of the team(IE: "90241B")
 		 * @param season the season to get stats for(IE: "In The Zone")
 		 * @throws JSONException for when the JSON API encounters error
@@ -764,6 +764,13 @@ public class Team {
 			this.season = season;
 		}
 		
+		/**
+		 * Sets the Teams data by getting JSON data from the Vexdb.io API
+		 * 
+		 * @return a TeamBuilder object with Teams JSON data
+		 * @throws JSONException for when the JSON API encounters error
+		 * @throws IOException for when an I/O error occurs
+		 */
 		public TeamBuilder setTeamData() throws JSONException, IOException {
 			//Construct link for lookup
 			String str_teams = "https://api.vexdb.io/v1/get_teams?team=" + this.teamNumber;
@@ -773,61 +780,75 @@ public class Team {
 			this.tData_teams = tObject_teams.getJSONArray("result");
 			return this;
 		}
-		
+
+		/**
+		 * Sets the Ranking data by getting JSON data from the Vexdb.io API
+		 * 
+		 * @return a TeamBuilder object with Ranking JSON data
+		 * @throws JSONException for when the JSON API encounters error
+		 * @throws IOException for when an I/O error occurs
+		 */
 		public TeamBuilder setRankingData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_rankings = "https://api.vexdb.io/v1/get_rankings?team=" + this.teamNumber + "&season=" + formattedSeason;
+			String str_rankings = String.format("https://api.vexdb.io/v1/get_rankings?team=%s&season=%s", this.teamNumber, formattedSeason);
 			//Create JSON object
 			JSONObject tObject_rankings = readJsonFromUrl(str_rankings);
 			//Create respective array
 			this.tData_rankings = tObject_rankings.getJSONArray("result");
 			return this;
 		}
-		
+
+		/**
+		 * Sets the Event data by getting JSON data from the Vexdb.io API
+		 * 
+		 * @return a TeamBuilder object with Event JSON data
+		 * @throws JSONException for when the JSON API encounters error
+		 * @throws IOException for when an I/O error occurs
+		 */
 		public TeamBuilder setEventData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_events = "https://api.vexdb.io/v1/get_events?team=" + this.teamNumber + "&season=" + formattedSeason;
+			String str_events = String.format("https://api.vexdb.io/v1/get_events?team=%s&season=%s", this.teamNumber, formattedSeason);
 			//Create JSON object
 			this.tData_events = readJsonFromUrl(str_events);
 			return this;
 		}
-		
-		public TeamBuilder setSeasonData() throws JSONException, IOException { 
+
+		public TeamBuilder setSeasonData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_season_rankings = "https://api.vexdb.io/v1/get_season_rankings?team=" + this.teamNumber + "&season=" + formattedSeason;
+			String str_season_rankings = String.format("https://api.vexdb.io/v1/get_season_rankings?team=%s&season=%s", this.teamNumber, formattedSeason);
 			//Create JSON object
 			JSONObject tObject_season_rankings = readJsonFromUrl(str_season_rankings);
 			//Create respective array
 			this.tData_season_rankings = tObject_season_rankings.getJSONArray("result");
 			return this;
 		}
-		
+
 		public TeamBuilder setSkillsData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
 			//Construct link for lookup
-			String str_skills = "https://api.vexdb.io/v1/get_skills?team=" + this.teamNumber + "&season=" + formattedSeason;
+			String str_skills = String.format("https://api.vexdb.io/v1/get_skills?team=%s&season=%s", this.teamNumber, formattedSeason);
 			//Create JSON object
 			JSONObject tObject_skills = readJsonFromUrl(str_skills);
 			//Create respective array
 			this.tData_skills = tObject_skills.getJSONArray("result");
 			return this;
 		}
-		
+
 		public Team build() {
 			return new Team(this);
 		}
-		
+
 		/**
-		  * Creates a {@link JSONObject} by reading a url that contains a JSON output, in this case 
+		  * Creates a {@link JSONObject} by reading a url that contains a JSON output, in this case
 		  * the URL is from the VexDB.io API
-	      * 
+	      *
 		  * @param url the url that has the JSON output
 		  * @return a JSONObject created from a JSON output from desired URL
 		  * @throws IOException for when an I/O error occurs
@@ -844,11 +865,11 @@ public class Team {
 				is.close();
 			}
 		}
-			
+
 		/**
-		 * Reads all letters from a reader and returns a string of these. Is currently 
+		 * Reads all letters from a reader and returns a string of these. Is currently
 		 * a work-around for some bugs involving readers and outputs
-		 * 
+		 *
 		 * @param rd The reader to extrapolate a string from
 		 * @return the whole string outputted from the reader
 		 * @throws IOException for when an I/O error occurs
