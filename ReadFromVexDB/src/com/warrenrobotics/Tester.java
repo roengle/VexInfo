@@ -13,7 +13,8 @@ public class Tester {
 		String usrEmail = "iragequitwup123zz@gmail.com";
 		//Essentially grab all data and set it(constructor body calls create and write methods)
 		@SuppressWarnings("unused")
-		TeamAPI api = new TeamAPI(eventLink2, usrEmail);
+		//If args isn't empty, use those. Otherwise, default values
+		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink2, usrEmail);
 		//Time taken
 		long timeTaken = System.currentTimeMillis() - curTime; 
 		//Print out message

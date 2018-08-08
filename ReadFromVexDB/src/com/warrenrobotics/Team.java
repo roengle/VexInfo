@@ -9,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
 /**
@@ -37,7 +36,6 @@ import java.nio.charset.Charset;
  * <p>
  * This class is responsible for calculating and storing statistics for a given VEX team.
  * </p>
- *
  * <p>
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
@@ -106,8 +104,7 @@ public class Team {
 	/**
 	 * Constructs a Team object and runs all necessary calculations to compile statistics
 	 *
-	 * @param name the name of the team(IE: 90241B)
-	 * @param tData_rankings the JSONarray acquired from getting JSON array with key "result"
+	 * @param tb the TeamBuilder object
 	 */
 	private Team(TeamBuilder tb){
 		//Set data
@@ -136,7 +133,7 @@ public class Team {
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
 		//Format location properly
-		this.teamLocation = !result.getString("region").equals("") ?
+		this.teamLocation = !result.getString("region").equals("") ? //condition
 				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country")) //If true
 				:
 				String.format("%s, %s", result.getString("city"), result.getString("country"));	//If false
@@ -733,7 +730,7 @@ public class Team {
 	*/
 	/**
 	 * A Builder method that is used to create a {@link Team} object. All fields/method calls in the class are
-	 * required, as a Builder class was used to reduce the amount of files to keep track of.
+	 * required, as a Builder class is used to reduce the amount of files to keep track of.
 	 *
 	 * @author Robert Engle | WHS Robotics | Team 90241B
 	 * @version 1.1
@@ -756,7 +753,7 @@ public class Team {
 		 *
 		 * @param teamNumber the number of the team(IE: "90241B")
 		 * @param season the season to get stats for(IE: "In The Zone")
-		 * @throws JSONException for when the JSON API encounters error
+		 * @throws JSONException for when the JSON API encounters an error
 		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder(String teamNumber, String season) throws JSONException, IOException {
@@ -768,7 +765,7 @@ public class Team {
 		 * Sets the Teams data by getting JSON data from the Vexdb.io API
 		 * 
 		 * @return a TeamBuilder object with Teams JSON data
-		 * @throws JSONException for when the JSON API encounters error
+		 * @throws JSONException for when the JSON API encounters an error
 		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder setTeamData() throws JSONException, IOException {
@@ -785,7 +782,7 @@ public class Team {
 		 * Sets the Ranking data by getting JSON data from the Vexdb.io API
 		 * 
 		 * @return a TeamBuilder object with Ranking JSON data
-		 * @throws JSONException for when the JSON API encounters error
+		 * @throws JSONException for when the JSON API encounters an error
 		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder setRankingData() throws JSONException, IOException {
@@ -804,7 +801,7 @@ public class Team {
 		 * Sets the Event data by getting JSON data from the Vexdb.io API
 		 * 
 		 * @return a TeamBuilder object with Event JSON data
-		 * @throws JSONException for when the JSON API encounters error
+		 * @throws JSONException for when the JSON API encounters an error
 		 * @throws IOException for when an I/O error occurs
 		 */
 		public TeamBuilder setEventData() throws JSONException, IOException {
@@ -817,6 +814,13 @@ public class Team {
 			return this;
 		}
 
+		/**
+		 * Sets the Season data by getting JSON data from the Vexdb.io API
+		 * 
+		 * @return a TeamBuilder object with Season JSON data
+		 * @throws JSONException for when the JSON API encounters an error
+		 * @throws IOException for when an I/O error occurs
+		 */
 		public TeamBuilder setSeasonData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
@@ -829,6 +833,13 @@ public class Team {
 			return this;
 		}
 
+		/**
+		 * Sets the Skills data by getting JSON data from the Vecdb.io API
+		 * 
+		 * @return a TeamBuilder object with Skills JSON data
+		 * @throws JSONException for when the JSON API encounters an error
+		 * @throws IOException for when an I/O error occurs
+		 */
 		public TeamBuilder setSkillsData() throws JSONException, IOException {
 			//URL-Escape the season
 			String formattedSeason = this.season.replace(" ", "%20");
@@ -841,6 +852,21 @@ public class Team {
 			return this;
 		}
 
+		/**
+		 * Returns a new {@link Team} object.
+		 * <p>
+		 * Note: These methods <b>must</b> be called in order for a {@link Team} object to be fully constructed.
+		 * <ul>
+		 * 		<li>setTeamData</li>
+		 * 		<li>setRankingData</li>
+		 * 		<li>setEventData</li>
+		 * 		<li>setSeasonData</li>
+		 * 		<li>setSkillsData</li>
+		 * </ul>
+		 * </p>
+		 * 
+		 * @return a Team object with all required JSON data + statistics
+		 */
 		public Team build() {
 			return new Team(this);
 		}
@@ -858,29 +884,17 @@ public class Team {
 			InputStream is = new URL(url).openStream();
 			try {
 				BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
-				String jsonText = readAll(rd);
+				StringBuilder sb = new StringBuilder();
+			    int cp;
+			    while ((cp = rd.read()) != -1) {
+			      sb.append((char) cp);
+			    }
+			    String jsonText = sb.toString();
 				JSONObject json = new JSONObject(jsonText);
 				return json;
 			} finally {
 				is.close();
 			}
-		}
-
-		/**
-		 * Reads all letters from a reader and returns a string of these. Is currently
-		 * a work-around for some bugs involving readers and outputs
-		 *
-		 * @param rd The reader to extrapolate a string from
-		 * @return the whole string outputted from the reader
-		 * @throws IOException for when an I/O error occurs
-		 */
-		private static String readAll(Reader rd) throws IOException {
-			StringBuilder sb = new StringBuilder();
-		    int cp;
-		    while ((cp = rd.read()) != -1) {
-		      sb.append((char) cp);
-		    }
-		    return sb.toString();
 		}
 	}//end TeamBuilder class
 }//end Team class

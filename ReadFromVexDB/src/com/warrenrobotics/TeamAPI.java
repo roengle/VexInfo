@@ -40,6 +40,10 @@ import com.google.api.services.sheets.v4.model.ValueRange;
  * <p>
  * This class is responsible for all interactions with Google Sheets.
  * </p>
+ * <p>
+ * To create a Google Sheet for an event, simply call the {@link TeamAPI} constructor, 
+ * with the link of the event and the email to share the Sheet with.
+ * </p>
  * @author Robert Engle | WHS Robotics | Team 90241B
  * @version 1.2
  * @since 2018-02-21
@@ -49,7 +53,6 @@ public class TeamAPI {
 	//Spreadsheet/user information
 	private String spreadsheetId; 
 	private String spreadsheetURL;
-	public final String usrEmail;
 	//Event information
 	private String season;
 	private String eventName;
@@ -57,7 +60,7 @@ public class TeamAPI {
 	private String[] teamList;
 	private String sku;
 	//Authentication information
-	private ValueRange response; //Currently depreciated
+	private ValueRange response; //Currently deprecated
 	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	//Logger
@@ -78,8 +81,6 @@ public class TeamAPI {
 		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 		Date date = new Date();
 		System.out.printf("%s - Running Program%n", dateFormat.format(date));
-		//Set user email
-		this.usrEmail = usrEmail;
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
 		//Check date to see if it first 4-week restriction
@@ -99,7 +100,7 @@ public class TeamAPI {
 		//Execute a write request
 		executeWriteRequest(sheetsService);
 		//Transfer ownership
-		transferOwnership(driveService);
+		transferOwnership(driveService, usrEmail);
 	}
 	
 	/*
@@ -121,12 +122,19 @@ public class TeamAPI {
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    //Print message
 		System.out.println("Building authenticated credential(Sheets API)...");
+		//Time how long it takes
+		long curTime = System.currentTimeMillis();
 		//Build authenticated credential
 		GoogleCredential newCredential = new GoogleCredential.Builder()
 				.setTransport(httpTransport)
 				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
 				.build()
 				.setAccessToken(accessToken);
+		//Get time difference
+		double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+		//Print out time taken
+		System.out.printf("Sheets credential built in %f seconds%n", timeDif);
+		//Return new credential
 		return newCredential;
 	}
 	
@@ -141,12 +149,19 @@ public class TeamAPI {
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    //Print message
 		System.out.println("Building authenticated credential(Drive API)...");
+		//Time how long it takes
+		long curTime = System.currentTimeMillis();
 		//Build authenticated credential
 		GoogleCredential newCredential = new GoogleCredential.Builder()
 				.setTransport(httpTransport)
 				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
 				.build()
 				.setAccessToken(accessToken);
+		//Get time difference
+		double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+		//Print out time taken
+		System.out.printf("Drive credential built in %f seconds%n", timeDif);
+		//Return new credential
 		return newCredential;
 	}
 	
@@ -160,10 +175,20 @@ public class TeamAPI {
 	private Sheets createSheetsService(GoogleCredential cred) throws IOException, GeneralSecurityException {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
-	    //Build a Sheets object and return it
-	    return new Sheets.Builder(httpTransportSheets, jsonFactory, cred)
+		//Print message
+		System.out.println("Building Sheets service");
+		//Time how long it takes
+		long curTime = System.currentTimeMillis();
+	    //Build a Sheets object
+	    Sheets sheets = new Sheets.Builder(httpTransportSheets, jsonFactory, cred)
 	        .setApplicationName("VexInfo.io - Sheets Usage")
 	        .build();
+	    //Get time difference
+	    double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+	    //Print out time taken
+	    System.out.printf("Sheets service build in %f seconds%n", timeDif);
+	    //Return new Sheets object
+	    return sheets;
 	}
 	
 	/**
@@ -176,10 +201,22 @@ public class TeamAPI {
 	private Drive createDriveService(GoogleCredential cred) throws IOException, GeneralSecurityException{
 		//Create new transport
 		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
+		//Print message
+		System.out.println("Building Drive service");
+		//Time how long it takes
+		long curTime = System.currentTimeMillis();
 		//Build drive object and return it
-		return new Drive.Builder(httpTransportDrive, jsonFactory, cred)
+		Drive drive = new Drive.Builder(httpTransportDrive, jsonFactory, cred)
 				.setApplicationName("VexInfo.io - Drive Usage")
 				.build();
+		//Get time difference
+	    double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+	    //Print out time taken
+	    System.out.printf("Drive service build in %f seconds%n", timeDif);
+	    //Print out break
+	    System.out.println("-----------------------------------------------------------");
+	    //Return new Drive object 
+	    return drive;
 	}
 
 	/**
@@ -277,7 +314,7 @@ public class TeamAPI {
 		this.spreadsheetId = response.getSpreadsheetId();
 		//Set the URL of spreadsheet
 		this.spreadsheetURL = response.getSpreadsheetUrl();
-		//Get how long algorithmn has taken
+		//Get how long algorithm has taken
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print success message(Format below)
 		System.out.printf("Sheet Created In %d ms%n%s%n", timeTaken, this.spreadsheetURL);
@@ -287,13 +324,14 @@ public class TeamAPI {
 	 * <p>
 	 * Executes a get request for all data in the spreadsheet
 	 * </p>
-	 * 
 	 * <p>
-	 * Currently depreciated
+	 * Currently deprecated
 	 * </p>
+	 * 
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
+	@Deprecated
 	public void executeGetRequest(Sheets sheetsService) throws IOException{
 		//Setup a request for getting spreadsheet data
 		Sheets.Spreadsheets.Values.Get request =
@@ -318,7 +356,7 @@ public class TeamAPI {
 		//ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND); // Currently not using
 		//Build column #1 of the spreadsheet
 		String[] names = new String[19];
-		//Assign proper values
+		//Put default column #1 values
 		putNames(names);
 		//Build list
 		List<List<Object>> topValues = Arrays.asList(Arrays.asList(names));
@@ -342,7 +380,7 @@ public class TeamAPI {
 			String range = null;
 			String printMsg = null;
 			//ONE-TEAM V. TWO-TEAM SETTINGS
-			if((i + 1) == teamList.length) {//At end, grabbing second team will throw out of bounds exception
+			if((i + 1) == teamList.length) {//At end, grabbing second team will throw out of bounds exception if there is odd # of teams
 				//ONE-TEAM SETTING
 				//Grab team name
 				String n = teamList[i];
@@ -453,8 +491,8 @@ public class TeamAPI {
 	private String setPermissionId(Drive driveService) throws IOException {
 		//Create About object which holds permission Id for current Drive auth
 		About response = driveService.about().get()
-		.setFields("user/permissionId")
-		.execute();
+					.setFields("user/permissionId")
+					.execute();
 		//Return the permissionId
 		return new JSONObject(response.toString())
 				.getJSONObject("user")
@@ -468,17 +506,17 @@ public class TeamAPI {
 	 * @param driveService an authenticated Drive object
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private void transferOwnership(Drive driveService) throws IOException {
+	private void transferOwnership(Drive driveService, String usrEmail) throws IOException {
 		String permissionId = setPermissionId(driveService);
 		//Print message
-		System.out.printf("Transferring ownership to %s%n", this.usrEmail);
+		System.out.printf("Transferring ownership to %s%n", usrEmail);
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build request body
 		Permission body = new Permission()
 				.setRole("owner")
 				.setType("user")
-				.setEmailAddress(this.usrEmail);
+				.setEmailAddress(usrEmail);
 		//Execute Drive request to transfer ownership
 		@SuppressWarnings("unused")
 		Permission permission = driveService.permissions().create(this.spreadsheetId, body)
@@ -500,7 +538,7 @@ public class TeamAPI {
 		//Time taken
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print message
-		System.out.printf("Ownership transferred to %s(%d ms)%n", this.usrEmail, timeTaken);
+		System.out.printf("Ownership transferred to %s(%d ms)%n", usrEmail, timeTaken);
 	}
 	
 	/*
@@ -517,10 +555,12 @@ public class TeamAPI {
 	 * </p>
 	 * 
 	 * <p>
-	 * Currently depreciated
+	 * Currently deprecated
 	 * </p>
 	 * @return the team names as an array of strings
 	 */
+	
+	@Deprecated
 	@SuppressWarnings("unused")
 	private void processResponseIntoTeamList() {
 		//Build string from ValueRange
@@ -590,6 +630,18 @@ public class TeamAPI {
 		this.teamList = teams;
 	}
 	
+	/**
+	 * Checks the current date and compares it to the event date(more specifically,
+	 * it compares it to the date exactly <u>28 days(4 weeks)</u> before the event date). 
+	 * <p>
+	 * If the current date isn't within <u>4 weeks</u> of the event date(or the event hasn't already happened), then 
+	 * the program will log it as an error and exit with an error code.
+	 * </p>
+	 * <p>
+	 * If the current date is within <u>4 weeks</u> of the event date(or the event has already happened), then
+	 * the program will simply continue.
+	 * </p>
+	 */
 	public void checkDate(){
 		//New Calendar instance
 		Calendar c = Calendar.getInstance();
@@ -604,13 +656,16 @@ public class TeamAPI {
 		//Put into date object
 		Date today = c.getTime();
 		//Get event date in an array of strings
+		//Format: YYYY-MM-DD
 		String[] eventTimeInfoStr = this.eventDate.split("-");
 		//Initialize and convert string array to int array
 		int[] eventTimeInfo = new int[3];
 		for(int i = 0; i < eventTimeInfo.length; i++) {
 			eventTimeInfo[i] = Integer.parseInt(eventTimeInfoStr[i]);
 		}
+		//Set calendar to event date
 		c.set(eventTimeInfo[0], eventTimeInfo[1], eventTimeInfo[2]);
+		//Get the actual date
 		Date eventDateActual = c.getTime();
 		//Set event date to exactly 4 weeks(28 days) before its date,
 		//since that is what the program is checking for
@@ -621,11 +676,12 @@ public class TeamAPI {
 		if(today.before(dateSpecified)) {
 			//Get difference of dates in milliseconds
 			long difInMs = dateSpecified.getTime() - today.getTime();
-			//Convert milliseconds to days(multiply by 8,640,000^-1 ms*s*min*h*days)
+			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
 			//Log the issue
 			LOGGER.error(String.format("Requirement not met. Wait %s days", dayDifference));
-			System.out.println("EXITING PROGRAM");
+			System.err.println("CANNOT GET DATA FROM API UNTIL 4-WEEK RESTRICTION MET");
+			System.err.printf("WAIT %d DAYS%nEXITING PROGRAM(1)%n", dayDifference);
 			//Stop program
 			System.exit(1);
 		} else { //Date restriction met
@@ -634,8 +690,12 @@ public class TeamAPI {
 			System.out.printf("Today's Date: %s%n", df.format(today));
 			System.out.printf("Event's Date(Actual): %s%n", df.format(eventDateActual));
 			System.out.printf("Event's Date(4 Weeks Prior): %s%n", df.format(dateSpecified));
+			//Program continues running
+			//Print break
+			System.out.println("-----------------------------------------------------------");
 		}
 	}
+	
 	/**
 	 * Builds values in an array representing certain statistics of the team.
 	 * <ul>
@@ -662,12 +722,15 @@ public class TeamAPI {
 	 * 			<li>totalEvents</li>
 	 * 		</ol>
 	 * </ul>
+	 * 
 	 * @param arr the array to write the statistics to
 	 * @param t the team who the statistics are for
 	 */
 	
 	@SuppressWarnings("static-access")
 	private void buildValues(String[] arr, Team t) {
+		//Make NOT FOUND string
+		final String ntFnd = "NOT_FOUND";
 		//0.
 		arr[0] = t.getNumber();
 		//1.
@@ -679,31 +742,31 @@ public class TeamAPI {
 		//4.
 		arr[4] = t.getTeamLink();
 		//5.
-		arr[5] = t.fieldIndicators.get("opr") ? Double.toString(t.getAvgOPR()) : "NOT_FOUND";
+		arr[5] = t.fieldIndicators.get("opr") ? Double.toString(t.getAvgOPR()) : ntFnd;
 		//6.
-		arr[6] = t.fieldIndicators.get("dpr") ? Double.toString(t.getAvgDPR()) : "NOT_FOUND";
+		arr[6] = t.fieldIndicators.get("dpr") ? Double.toString(t.getAvgDPR()) : ntFnd;
 		//7.
-		arr[7] = t.fieldIndicators.get("ccwm") ? Double.toString(t.getAvgCCWM()) : "NOT_FOUND";
+		arr[7] = t.fieldIndicators.get("ccwm") ? Double.toString(t.getAvgCCWM()) : ntFnd;
 		//8.
-		arr[8] = t.fieldIndicators.get("ap") ? Double.toString(t.getAvgAP()) : "NOT_FOUND";
+		arr[8] = t.fieldIndicators.get("ap") ? Double.toString(t.getAvgAP()) : ntFnd;
 		//9.
-		arr[9] = t.fieldIndicators.get("sp") ? Integer.toString(t.getAvgSP()) : "NOT_FOUND";
+		arr[9] = t.fieldIndicators.get("sp") ? Integer.toString(t.getAvgSP()) : ntFnd;
 		//10.
-		arr[10] = t.fieldIndicators.get("trsp") ? Integer.toString(t.getAvgTRSP()) : "NOT_FOUND";
+		arr[10] = t.fieldIndicators.get("trsp") ? Integer.toString(t.getAvgTRSP()) : ntFnd;
 		//11.
-		arr[11] = t.fieldIndicators.get("vrating_rank") ? Integer.toString(t.getvrating_rank()) : "NOT_FOUND";
+		arr[11] = t.fieldIndicators.get("vrating_rank") ? Integer.toString(t.getvrating_rank()) : ntFnd;
 		//12.
-		arr[12] = t.fieldIndicators.get("vrating") ? Double.toString(t.getvrating()) : "NOT_FOUND";
+		arr[12] = t.fieldIndicators.get("vrating") ? Double.toString(t.getvrating()) : ntFnd;
 		//13.
-		arr[13] = t.fieldIndicators.get("rank") ? Integer.toString(t.getAvgRank()) : "NOT_FOUND";
+		arr[13] = t.fieldIndicators.get("rank") ? Integer.toString(t.getAvgRank()) : ntFnd;
 		//14.
-		arr[14] = t.fieldIndicators.get("skills_auton") ? Integer.toString(t.getAvgSkillsScore_auton()) : "NOT_FOUND";
+		arr[14] = t.fieldIndicators.get("skills_auton") ? Integer.toString(t.getAvgSkillsScore_auton()) : ntFnd;
 		//15.
-		arr[15] = t.fieldIndicators.get("skills_robot") ? Integer.toString(t.getAvgSkillsScore_robot()) : "NOT_FOUND";
+		arr[15] = t.fieldIndicators.get("skills_robot") ? Integer.toString(t.getAvgSkillsScore_robot()) : ntFnd;
 		//16.
-		arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : "NOT_FOUND";
+		arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : ntFnd;
 		//17.
-		arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : "NOT_FOUND";
+		arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : ntFnd;
 		//18.
 		arr[18] = Integer.toString(t.getNumEvents());
 	}
@@ -753,6 +816,7 @@ public class TeamAPI {
 	/**
 	 * Returns the event name and spreadsheet ID of the current {@link TeamAPI} instance
 	 */
+	@Override
 	public String toString() {
 		return String.format("VexInfo.io - %s (%s)", this.eventName, this.spreadsheetId);
 	}
