@@ -59,8 +59,6 @@ public class TeamAPI {
 	private String eventDate;
 	private String[] teamList;
 	private String sku;
-	//Authentication information
-	private ValueRange response; //Currently deprecated
 	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	//Logger
@@ -83,8 +81,6 @@ public class TeamAPI {
 		System.out.printf("%s - Running Program%n", dateFormat.format(date));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link);
-		//Check date to see if it first 4-week restriction
-		checkDate();
 		//Assign access tokens
 		String accessToken_sheets = setAccessToken_sheets();
 		String accessToken_drive = setAccessToken_drive();
@@ -115,7 +111,7 @@ public class TeamAPI {
 	 * Builds and returns an authenticated credential for a Sheets objects
 	 * 
 	 * @throws GeneralSecurityException
-	 * @throws IOException
+	 * @throws IOException for when an I/O error occurs
 	 */
 	private GoogleCredential setCredential_sheets(String accessToken) throws GeneralSecurityException, IOException {
 		//Create new transport
@@ -131,9 +127,9 @@ public class TeamAPI {
 				.build()
 				.setAccessToken(accessToken);
 		//Get time difference
-		double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
-		System.out.printf("Sheets credential built in %f seconds%n", timeDif);
+		System.out.printf("Sheets credential built in %f ms%n", timeDif);
 		//Return new credential
 		return newCredential;
 	}
@@ -158,9 +154,9 @@ public class TeamAPI {
 				.build()
 				.setAccessToken(accessToken);
 		//Get time difference
-		double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
-		System.out.printf("Drive credential built in %f seconds%n", timeDif);
+		System.out.printf("Drive credential built in %f ms%n", timeDif);
 		//Return new credential
 		return newCredential;
 	}
@@ -184,9 +180,9 @@ public class TeamAPI {
 	        .setApplicationName("VexInfo.io - Sheets Usage")
 	        .build();
 	    //Get time difference
-	    double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Sheets service build in %f seconds%n", timeDif);
+	    System.out.printf("Sheets service build in %f ms%n", timeDif);
 	    //Return new Sheets object
 	    return sheets;
 	}
@@ -210,9 +206,9 @@ public class TeamAPI {
 				.setApplicationName("VexInfo.io - Drive Usage")
 				.build();
 		//Get time difference
-	    double timeDif = (double)(System.currentTimeMillis() - curTime)/1000;
+	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Drive service build in %f seconds%n", timeDif);
+	    System.out.printf("Drive service build in %f ms%n", timeDif);
 	    //Print out break
 	    System.out.println("-----------------------------------------------------------");
 	    //Return new Drive object 
@@ -318,28 +314,6 @@ public class TeamAPI {
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print success message(Format below)
 		System.out.printf("Sheet Created In %d ms%n%s%n", timeTaken, this.spreadsheetURL);
-	}
-	
-	/**
-	 * <p>
-	 * Executes a get request for all data in the spreadsheet
-	 * </p>
-	 * <p>
-	 * Currently deprecated
-	 * </p>
-	 * 
-	 * @param sheetsService the Sheets object with an authenticated credential
-	 * @throws IOException for when an I/O error occurs
-	 */
-	@Deprecated
-	public void executeGetRequest(Sheets sheetsService) throws IOException{
-		//Setup a request for getting spreadsheet data
-		Sheets.Spreadsheets.Values.Get request =
-		    sheetsService.spreadsheets().values().get(this.spreadsheetId, "Sheet1");
-		    request.setValueRenderOption("FORMATTED_VALUE");
-		    request.setDateTimeRenderOption("SERIAL_NUMBER");
-		//Get a response as a ValueRange(which can converted to JSON Objects)
-		this.response = request.execute();
 	}
 	
 	/**
@@ -509,7 +483,7 @@ public class TeamAPI {
 	private void transferOwnership(Drive driveService, String usrEmail) throws IOException {
 		String permissionId = setPermissionId(driveService);
 		//Print message
-		System.out.printf("Transferring ownership to %s%n", usrEmail);
+		System.out.printf("Transferring ownership to %s...%n", usrEmail);
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build request body
@@ -525,7 +499,7 @@ public class TeamAPI {
 				.setSendNotificationEmail(true)
 				.setSupportsTeamDrives(true)
 				.setTransferOwnership(true)
-				.setUseDomainAdminAccess(false)
+				.setUseDomainAdminAccess(true)
 				.setFields("emailAddress")
 				.execute();
 		//Execute drive request to remove current email from sheet
@@ -548,37 +522,6 @@ public class TeamAPI {
 	//																						//
 	------------------------------------------------------------------------------------------
 	*/
-	
-	/**
-	 * <p>
-	 * Processes the response into an array of strings containing team names(IE: ["90241A", "90241B"])
-	 * </p>
-	 * 
-	 * <p>
-	 * Currently deprecated
-	 * </p>
-	 * @return the team names as an array of strings
-	 */
-	
-	@Deprecated
-	@SuppressWarnings("unused")
-	private void processResponseIntoTeamList() {
-		//Build string from ValueRange
-		String responseStr = this.response.toString();
-		//Build a json object from the string
-		JSONObject json = new JSONObject(responseStr);
-		//Build a json array from the "values" section
-		JSONArray values = json.getJSONArray("values");
-		//Make an array of strings for team names. Is length - 1 since the first iteration of values doesn't contain a team
-		String[] teams = new String[values.length() - 1];
-		//Start at index 1 to ignore top of row(which shows "Team")
-		for(int i = 1; i < values.length(); i++) {
-			//Must input at i - 1 since array starts at 0 still
-			teams[i - 1] = values.getJSONArray(i).getString(0);
-		}
-		//Set the class team list
-		this.teamList = teams;
-	}
 	
 	/**
 	 * <p>
@@ -617,6 +560,8 @@ public class TeamAPI {
 		//Set event date(only grab start day, ignore time)
 		//Format: YYYY-MM-DD
 		this.eventDate = eventJson.getString("start").split("T")[0];
+		//Check date to see if it first 4-week restriction
+		checkDate();
 		//Build JSON array from SKU
 		JSONArray result = Team.TeamBuilder
 				.readJsonFromUrl("https://api.vexdb.io/v1/get_teams?sku=" + this.sku)
@@ -679,9 +624,9 @@ public class TeamAPI {
 			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
 			//Log the issue
-			LOGGER.error(String.format("Requirement not met. Wait %s days", dayDifference));
+			LOGGER.error(String.format("Requirement not met. Wait (%d) days.", dayDifference));
 			System.err.println("CANNOT GET DATA FROM API UNTIL 4-WEEK RESTRICTION MET");
-			System.err.printf("WAIT %d DAYS%nEXITING PROGRAM(1)%n", dayDifference);
+			System.err.printf("WAIT (%d) DAYS%nEXITING PROGRAM(1)%n", dayDifference);
 			//Stop program
 			System.exit(1);
 		} else { //Date restriction met
@@ -690,9 +635,9 @@ public class TeamAPI {
 			System.out.printf("Today's Date: %s%n", df.format(today));
 			System.out.printf("Event's Date(Actual): %s%n", df.format(eventDateActual));
 			System.out.printf("Event's Date(4 Weeks Prior): %s%n", df.format(dateSpecified));
-			//Program continues running
 			//Print break
 			System.out.println("-----------------------------------------------------------");
+			//Program continues running
 		}
 	}
 	
