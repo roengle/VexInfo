@@ -129,7 +129,7 @@ public class TeamAPI {
 		//Get time difference
 		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
-		System.out.printf("Sheets credential built in %f ms%n", timeDif);
+		System.out.printf("Sheets credential built in %d ms%n", timeDif);
 		//Return new credential
 		return newCredential;
 	}
@@ -156,7 +156,7 @@ public class TeamAPI {
 		//Get time difference
 		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
-		System.out.printf("Drive credential built in %f ms%n", timeDif);
+		System.out.printf("Drive credential built in %d ms%n", timeDif);
 		//Return new credential
 		return newCredential;
 	}
@@ -182,7 +182,7 @@ public class TeamAPI {
 	    //Get time difference
 	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Sheets service build in %f ms%n", timeDif);
+	    System.out.printf("Sheets service build in %d ms%n", timeDif);
 	    //Return new Sheets object
 	    return sheets;
 	}
@@ -208,7 +208,7 @@ public class TeamAPI {
 		//Get time difference
 	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Drive service build in %f ms%n", timeDif);
+	    System.out.printf("Drive service build in %d ms%n", timeDif);
 	    //Print out break
 	    System.out.println("-----------------------------------------------------------");
 	    //Return new Drive object 
