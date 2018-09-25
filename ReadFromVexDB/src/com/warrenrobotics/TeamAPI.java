@@ -80,7 +80,49 @@ public class TeamAPI {
 		Date date = new Date();
 		System.out.printf("%s - Running Program%n", dateFormat.format(date));
 		//Process link into SKU, grab season, set event name, and set team list
-		processLink(link);
+		processLink(link, "");
+		//Assign access tokens
+		String accessToken_sheets = setAccessToken_sheets();
+		String accessToken_drive = setAccessToken_drive();
+		//Assign credentials
+		GoogleCredential credential_sheets = setCredential_sheets(accessToken_sheets);
+		GoogleCredential credential_drive = setCredential_drive(accessToken_drive);
+		//Create sheet service with authenticated credential
+		Sheets sheetsService = createSheetsService(credential_sheets);
+		//Create drive service with authenticated credential
+		Drive driveService = createDriveService(credential_drive);
+		//Create spreadsheet
+		executeCreateRequest(sheetsService);
+		//Execute a write request
+		executeWriteRequest(sheetsService);
+		//Transfer ownership
+		transferOwnership(driveService, usrEmail);
+	}
+	
+	/**
+	 * <p>
+	 * Constructs a TeamAPI object to write data to a Google Sheet using the Google Sheets API v4
+	 * and the Google Drive API v3
+	 * </p>
+	 * <p>
+	 * This version of the constructor allows a user to specify a season to get stats for, 
+	 * and doesn't automatically get the season on the RobotEvents page
+	 * </p>
+	 * 
+	 * @param link the URL of the RobotEvents page
+	 * @param usrEmail the email for the user who will be given ownership of the sheet
+	 * @param season the specified season to get stats for
+	 * @throws IOException for when an I/O error occurs
+	 * @throws GeneralSecurityException
+	 * @throws InterruptedException for when a working thread is interrupted
+	 */
+	public TeamAPI(String link, String usrEmail, String season) throws IOException, GeneralSecurityException, InterruptedException{
+		//Print date of start time
+		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+		Date date = new Date();
+		System.out.printf("%s - Running Program%n", dateFormat.format(date));
+		//Process link into SKU, grab season, set event name, and set team list
+		processLink(link, season);
 		//Assign access tokens
 		String accessToken_sheets = setAccessToken_sheets();
 		String accessToken_drive = setAccessToken_drive();
@@ -296,8 +338,8 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
-		System.out.printf("Creating Spreadsheet for Event%n");
-		//Time how long algorithmn takes
+		System.out.printf("Creating Google Sheet for Event%n");
+		//Time how long algorithm takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
 		Spreadsheet requestBody = new Spreadsheet()
@@ -314,6 +356,8 @@ public class TeamAPI {
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print success message(Format below)
 		System.out.printf("Sheet Created In %d ms%n%s%n", timeTaken, this.spreadsheetURL);
+		//Print break
+		System.out.println("-----------------------------------------------------------");
 	}
 	
 	/**
@@ -344,106 +388,53 @@ public class TeamAPI {
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.printf("Initialize - %d Teams%n-----------------------------------------------------------%n", teamList.length);
+		System.out.printf("Team Count - %d Teams%n", teamList.length);
+		//Start with ArrayList, cast to List later
+		List<List<Object>> values = new ArrayList<List<Object>>();
 		//Loop through team list
 		for(int i = 0; i < teamList.length; i++) {
 			//Time how long each loop takes
 			long sTime = System.currentTimeMillis();
-			//Start values as null
-			List<List<Object>> values = null;
-			String range = null;
-			String printMsg = null;
-			//ONE-TEAM V. TWO-TEAM SETTINGS
-			if((i + 1) == teamList.length) {//At end, grabbing second team will throw out of bounds exception if there is odd # of teams
-				//ONE-TEAM SETTING
-				//Grab team name
-				String n = teamList[i];
-				//Parse team and calculate data
-				Team t = new Team.TeamBuilder(n, this.season)
-						.setTeamData()
-						.setEventData()
-						.setRankingData()
-						.setSeasonData()
-						.setSkillsData()
-						.build();
-				//Initialize array for inputting data
-				String[] valuesArr = new String[19];
-				//Build array with proper data
-				buildValues(valuesArr, t);
-				//Configure body for input
-				values = Arrays.asList(Arrays.asList(valuesArr));
-				//Configure range as Sheet1!F#:S# where # is a number based on the current team(i+2)
-				range = String.format("Sheet1!A%d:S%d", (i + 2), (i + 2));
-				//Setup print message
-				printMsg = String.format("COLUMN#%d STATS UPDATED: %s (", (i + 2), t.number);
-			}else {//Can still grab two teams without exception
-				//TWO-TEAM SETTING
-				//Grab first team name
-				String n1 = teamList[i];
-				//Parse team 1 and calculate data
-				Team t1 = new Team.TeamBuilder(n1, this.season)
-						.setTeamData()
-						.setEventData()
-						.setRankingData()
-						.setSeasonData()
-						.setSkillsData()
-						.build();
-				//Initialize array for inputting data
-				String[] valuesArr1 = new String[19];
-				//Build array with proper data
-				buildValues(valuesArr1, t1);
-				//Grab second team name
-				String n2 = teamList[i + 1];
-				//Parse team 2 and calculate data
-				Team t2 = new Team.TeamBuilder(n2, this.season)
-						.setTeamData()
-						.setEventData()
-						.setRankingData()
-						.setSeasonData()
-						.setSkillsData()
-						.build();
-				//Initialize array for inputting data
-				String[] valuesArr2 = new String[19];
-				//Build array with proper data
-				buildValues(valuesArr2, t2);
-				//Configure body for input
-				values = Arrays.asList(Arrays.asList(valuesArr1), Arrays.asList(valuesArr2));
-				//Configure range as Sheet1!F#:S# where # is a number based on the current team and next team(i+3)
-				range = String.format("Sheet1!A%d:S%d", (i + 2), (i + 3));
-				//Setup print message
-				printMsg = String.format("COLUMN# %d,%d UPDATED: %s, %s(", (i+2), (i+3), t1.number, t2.number);
-				//Increment counter since we go by two's in this mode
-				i++;
-			}
-			//Configure body as a ValueRange object
-			ValueRange body = new ValueRange().setValues(values);
-			//Reserve quota(currently disabled, quota was updated by google)
-			//apiRateLimiter.reserve(Constants.SHEETS_QUOTA_PER_SECOND);
-			//Time how long write request takes
-			long tTime = System.currentTimeMillis();
-			//Send write request and receive response
-			@SuppressWarnings("unused")
-			UpdateValuesResponse result = 
-					sheetsService.spreadsheets().values()
-					.update(this.spreadsheetId, range, body)
-					.setValueInputOption("USER_ENTERED")
-					.setIncludeValuesInResponse(false)
-					.execute();
-			//Grab current time
-			long nextTime = System.currentTimeMillis();
-			//Grab how long it took in total
-			long timeTakenTotal = nextTime - sTime;
-			//Grab how long it took for just the write request
-			long timeTakenWrite = nextTime - tTime;
-			//Print out success message
-			System.out.printf("%s%dms total, %dms write)%n", printMsg, timeTakenTotal, timeTakenWrite);
+			//Grab team name
+			String n = teamList[i];
+			//Parse team and calculate data
+			Team t = new Team.TeamBuilder(n, this.season)
+					.setTeamData()
+					.setEventData()
+					.setRankingData()
+					.setSeasonData()
+					.setSkillsData()
+					.build();
+			//Initialize array for inputting data
+			String[] valuesArr = new String[19];
+			//Build array with proper data
+			buildValues(valuesArr, t);
+			//Add to list
+			values.add(Arrays.asList(valuesArr));
+			//Time taken
+			long timeTaken = System.currentTimeMillis() - sTime;
+			//Print-out
+			System.out.printf("Team %s inputted in %d ms\n", n.toString(), timeTaken);
 		}
+		//Cast ArrayList to List
+		List<List<Object>> inputValues = (List)values;
+		//Configure body for input
+		ValueRange body = new ValueRange()
+				.setValues(inputValues);
+		//Configure write-range
+		String customRange = String.format("Sheet1!A2:S%d", (teamList.length + 2));
+		//Execute write request
+		sheetsService.spreadsheets().values()
+			.update(this.spreadsheetId, customRange, body)
+			.setValueInputOption("USER_ENTERED")
+			.setIncludeValuesInResponse(false)
+			.execute();
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
 		double runtimeInSeconds = (double)runtime/1000;
 		//Print success message
-		System.out.printf("Success - %d TEAMS UPDATED IN %f SECONDS%n", teamList.length, runtimeInSeconds);
+		System.out.printf("Success - %d Teams updated in %f seconds\n", teamList.length, runtimeInSeconds);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -531,15 +522,20 @@ public class TeamAPI {
 	 * </p>
 	 * 
 	 * <p>
+	 * Either gets season for the current tournament(tied to the RobotEvents link), or
+	 * allows the user to specify their own season.
+	 * </p>
+	 * <p>
 	 * <b>Note:</b> Team lists can only be generated <u>4 weeks</u> before the start date
 	 * of the tournament
 	 * </p>
 	 * 
 	 * @param s the URL of the robot events link
+	 * @param season Any valid season within the VexDB query list.(can also be "" to get current season)
 	 * @throws JSONException for when JSON API encounters error
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private void processLink(String s) throws JSONException, IOException {
+	private void processLink(String s, String season) throws JSONException, IOException {
 		//Create URL from link
 		URL link = new URL(s);
 		//Get file path of url
@@ -552,7 +548,11 @@ public class TeamAPI {
 				.getJSONArray("result")
 				.getJSONObject(0);
 		//Set event season
-		this.season = eventJson.getString("season");
+		if(!season.equals("")) {
+			this.season = eventJson.getString("season");
+		} else {
+			this.season = season;
+		}
 		//Set event name
 		this.eventName = eventJson.getString("name");
 		//Print event name
@@ -614,7 +614,7 @@ public class TeamAPI {
 		Date eventDateActual = c.getTime();
 		//Set event date to exactly 4 weeks(28 days) before its date,
 		//since that is what the program is checking for
-		c.set(eventTimeInfo[0], eventTimeInfo[1], (eventTimeInfo[2] - 28));
+		c.set(eventTimeInfo[0], (eventTimeInfo[1] - 1), (eventTimeInfo[2] - 28));
 		//Check date with this specified date
 		Date dateSpecified = c.getTime();
 		//If current Date is greater than 4 weeks before the event
@@ -623,8 +623,13 @@ public class TeamAPI {
 			long difInMs = dateSpecified.getTime() - today.getTime();
 			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
+			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+			System.out.printf("Today:%s\n", df.format(today));
+			System.out.printf("Actual:%s\n", df.format(eventDateActual));
+			System.out.printf("Specified:%s\n", df.format(dateSpecified));
 			//Log the issue
 			LOGGER.error(String.format("Requirement not met. Wait (%d) days.", dayDifference));
+			System.out.println("DATE CHECK:FALSE");
 			System.err.println("CANNOT GET DATA FROM API UNTIL 4-WEEK RESTRICTION MET");
 			System.err.printf("WAIT (%d) DAYS%nEXITING PROGRAM(1)%n", dayDifference);
 			//Stop program
@@ -635,6 +640,7 @@ public class TeamAPI {
 			System.out.printf("Today's Date: %s%n", df.format(today));
 			System.out.printf("Event's Date(Actual): %s%n", df.format(eventDateActual));
 			System.out.printf("Event's Date(4 Weeks Prior): %s%n", df.format(dateSpecified));
+			System.out.println("DATE CHECK:TRUE");
 			//Print break
 			System.out.println("-----------------------------------------------------------");
 			//Program continues running

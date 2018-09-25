@@ -1,5 +1,4 @@
 package com.warrenrobotics;
-
 //Used in Team class
 import org.json.*;
 import java.util.HashMap;
@@ -11,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
+
 /**
  * <p>
  * This class allows for team statistics to be parsed and stored.
@@ -72,8 +72,8 @@ public class Team {
 	//Data - Events
 	public int numEvents;
 	//Data - Season Rankings
-	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to gauge a team
-	   A higher vrating represents a better team
+	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to gauge a team.
+	   A higher vrating represents a better team.
 	*/
 	public int vrating_rank;
 	public double vrating;
@@ -81,8 +81,7 @@ public class Team {
 	public int avgSkillsScore_robot;
 	public int avgSkillsScore_auton;
 	public int avgSkillsScore_combined;
-
-	//Use static initializer to prevent having to fill with values for every iteration
+	//Used for empty-data checking. Uses a static initializer to avoid making new map for every Team instance
 	public static Map<String, Boolean> fieldIndicators = new HashMap<>();
 	static {
 		//Initialize all to true, then when checking, set to false if needed
@@ -104,7 +103,7 @@ public class Team {
 	/**
 	 * Constructs a Team object and runs all necessary calculations to compile statistics
 	 *
-	 * @param tb the TeamBuilder object
+	 * @param tb the TeamBuilder object with data
 	 */
 	private Team(TeamBuilder tb){
 		//Set data
@@ -133,11 +132,12 @@ public class Team {
 		this.teamName = result.getString("team_name");
 		this.teamOrg = result.getString("organisation");
 		//Format location properly
-		this.teamLocation = !result.getString("region").equals("") ? //condition
-				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country")) //If true
+		this.teamLocation = !result.getString("region").equals("") ? 
+				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country"))
 				:
-				String.format("%s, %s", result.getString("city"), result.getString("country"));	//If false
-		this.teamLink = "https://vexdb.io/teams/view/" + this.number;
+				String.format("%s, %s", result.getString("city"), result.getString("country"));	
+		//Format link correctly
+		this.teamLink = String.format("https://vexdb.io/teams/view/%s", this.number);
 	}
 
 	/**
@@ -719,7 +719,7 @@ public class Team {
 	/**
 	 * A toString method that simply returns the team name
 	 */
-	public String toString() { return "Team " + this.number; }
+	public String toString() { return this.number; }
 
 	/*
 	------------------------------------------------------------------------------------------
