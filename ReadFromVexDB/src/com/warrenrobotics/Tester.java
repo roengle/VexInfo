@@ -16,7 +16,7 @@ public class Tester {
 		//Essentially grab all data and set it(constructor body calls create and write methods)
 		@SuppressWarnings("unused")
 		//If args isn't empty, use those. Otherwise, default values
-		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink6, usrEmail, "In The Zone");
+		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink5, usrEmail, "In The Zone");
 		//Time taken
 		long timeTaken = System.currentTimeMillis() - curTime; 
 		//Print out message

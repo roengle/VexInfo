@@ -214,7 +214,7 @@ public class TeamAPI {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
-		System.out.println("Building Sheets service");
+		System.out.println("Building Sheets service...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 	    //Build a Sheets object
@@ -240,7 +240,7 @@ public class TeamAPI {
 		//Create new transport
 		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
-		System.out.println("Building Drive service");
+		System.out.println("Building Drive service...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build drive object and return it
@@ -388,7 +388,7 @@ public class TeamAPI {
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.printf("Team Count - %d Teams%n", teamList.length);
+		System.out.printf("Team Count - %d Teams(Season:%s)%n", teamList.length, this.season);
 		//Start with ArrayList, cast to List later
 		List<List<Object>> values = new ArrayList<List<Object>>();
 		//Loop through team list
@@ -416,6 +416,8 @@ public class TeamAPI {
 			//Print-out
 			System.out.printf("Team %s inputted in %d ms\n", n.toString(), timeTaken);
 		}
+		//Time how long the write request takes
+		long writeTime = System.currentTimeMillis();
 		//Cast ArrayList to List
 		List<List<Object>> inputValues = (List)values;
 		//Configure body for input
@@ -429,6 +431,10 @@ public class TeamAPI {
 			.setValueInputOption("USER_ENTERED")
 			.setIncludeValuesInResponse(false)
 			.execute();
+		//Time how long the write request takes
+		long writeTimeTaken = System.currentTimeMillis() - writeTime;
+		//Print out how long write time took
+		System.out.printf("Write time:%f\n", (double)writeTimeTaken/1000);
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
@@ -523,7 +529,8 @@ public class TeamAPI {
 	 * 
 	 * <p>
 	 * Either gets season for the current tournament(tied to the RobotEvents link), or
-	 * allows the user to specify their own season.
+	 * allows the user to specify their own season. If season is empty, it will used the 
+	 * season tied to the RobotEvents link. If not empty, it will use the season specified.
 	 * </p>
 	 * <p>
 	 * <b>Note:</b> Team lists can only be generated <u>4 weeks</u> before the start date
@@ -548,7 +555,7 @@ public class TeamAPI {
 				.getJSONArray("result")
 				.getJSONObject(0);
 		//Set event season
-		if(!season.equals("")) {
+		if(season.equals("")) {
 			this.season = eventJson.getString("season");
 		} else {
 			this.season = season;
@@ -557,6 +564,8 @@ public class TeamAPI {
 		this.eventName = eventJson.getString("name");
 		//Print event name
 		System.out.printf("Event Name: %s%n", this.eventName);
+		//Print season for stats
+		System.out.printf("Season for team stats: %s\n", this.season);
 		//Set event date(only grab start day, ignore time)
 		//Format: YYYY-MM-DD
 		this.eventDate = eventJson.getString("start").split("T")[0];
@@ -588,6 +597,8 @@ public class TeamAPI {
 	 * </p>
 	 */
 	public void checkDate(){
+		//Print break
+		System.out.println("-----------------------------------------------------------");
 		//New Calendar instance
 		Calendar c = Calendar.getInstance();
 		//Set leniency to true, so program could subtract 4 weeks(28 days)
@@ -747,7 +758,7 @@ public class TeamAPI {
 		a[15] = "Average Skills Score(Robot)";
 		a[16] = "Average Skills Score(Combined)";
 		a[17] = "Average Max Score";
-		a[18] = "Total Events This Season";
+		a[18] = String.format("Total Events:(%s)", this.season);
 	}
 	/*
 	------------------------------------------------------------------------------------------
