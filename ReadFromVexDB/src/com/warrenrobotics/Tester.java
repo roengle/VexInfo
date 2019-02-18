@@ -11,12 +11,13 @@ public class Tester {
 		String eventLink4 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-17-4185.html"; //VRC Howl in the Hills
 		String eventLink5 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5915.html"; //El Camino Turning Point
 		String eventLink6 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5481.html"; //First for 2018-2019
+		String eventLink7 = "https://www.robotevents.com/robot-competitions/vex-iq-challenge/RE-VIQC-18-7854.html"; //Tester for IQ
 		//Set email for user to transfer ownership to
 		String usrEmail = "iragequitwup123zz@gmail.com";
 		//Essentially grab all data and set it(constructor body calls create and write methods)
 		@SuppressWarnings("unused")
 		//If args isn't empty, use those. Otherwise, default values
-		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink5, usrEmail, "In The Zone");
+		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink5, usrEmail);
 		//Time taken
 		long timeTaken = System.currentTimeMillis() - curTime; 
 		//Print out message

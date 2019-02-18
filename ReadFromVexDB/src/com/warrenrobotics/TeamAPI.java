@@ -11,8 +11,9 @@ import java.util.concurrent.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
@@ -62,8 +63,7 @@ public class TeamAPI {
 	//Constants
 	public final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 	//Logger
-	private static Logger LOGGER = LoggerFactory.getLogger(TeamAPI.class);
-	
+	private static Logger LOGGER = LogManager.getLogger(TeamAPI.class);
 	/**
 	 * Constructs a TeamAPI object to write data to a Google Sheet using the Google Sheets API v4
 	 * and the Google Drive API v3
@@ -82,11 +82,11 @@ public class TeamAPI {
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, "");
 		//Assign access tokens
-		String accessToken_sheets = setAccessToken_sheets();
-		String accessToken_drive = setAccessToken_drive();
+		String accessToken_sheets = setAccessToken();
+		String accessToken_drive = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential_sheets(accessToken_sheets);
-		GoogleCredential credential_drive = setCredential_drive(accessToken_drive);
+		GoogleCredential credential_sheets = setCredential(accessToken_sheets);
+		GoogleCredential credential_drive = setCredential(accessToken_drive);
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
 		//Create drive service with authenticated credential
@@ -106,7 +106,9 @@ public class TeamAPI {
 	 * </p>
 	 * <p>
 	 * This version of the constructor allows a user to specify a season to get stats for, 
-	 * and doesn't automatically get the season on the RobotEvents page
+	 * and doesn't automatically get the season on the RobotEvents page. This is useful
+	 * for getting statistics for tournaments really early into the season, as lots of 
+	 * teams won't have any data.
 	 * </p>
 	 * 
 	 * @param link the URL of the RobotEvents page
@@ -124,11 +126,10 @@ public class TeamAPI {
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, season);
 		//Assign access tokens
-		String accessToken_sheets = setAccessToken_sheets();
-		String accessToken_drive = setAccessToken_drive();
+		String accessToken = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential_sheets(accessToken_sheets);
-		GoogleCredential credential_drive = setCredential_drive(accessToken_drive);
+		GoogleCredential credential_sheets = setCredential(accessToken);
+		GoogleCredential credential_drive = setCredential(accessToken);
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
 		//Create drive service with authenticated credential
@@ -150,55 +151,28 @@ public class TeamAPI {
 	*/
 	
 	/**
-	 * Builds and returns an authenticated credential for a Sheets objects
+	 * Builds and returns an authenticated credential for the Sheets and Drive objects
 	 * 
 	 * @throws GeneralSecurityException
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private GoogleCredential setCredential_sheets(String accessToken) throws GeneralSecurityException, IOException {
+	private GoogleCredential setCredential(String accessToken) throws GeneralSecurityException, IOException {
 		//Create new transport
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 	    //Print message
-		System.out.println("Building authenticated credential(Sheets API)...");
+		System.out.print("Building API Credential...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build authenticated credential
 		GoogleCredential newCredential = new GoogleCredential.Builder()
 				.setTransport(httpTransport)
-				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
+				.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 				.build()
 				.setAccessToken(accessToken);
 		//Get time difference
 		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
-		System.out.printf("Sheets credential built in %d ms%n", timeDif);
-		//Return new credential
-		return newCredential;
-	}
-	
-	/**
-	 * Builds and returns an authenticated credential for a Drive object
-	 * 
-	 * @throws GeneralSecurityException
-	 * @throws IOException for when an I/O error occurs
-	 */
-	private GoogleCredential setCredential_drive(String accessToken) throws GeneralSecurityException, IOException {
-		//Create new transport
-		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-	    //Print message
-		System.out.println("Building authenticated credential(Drive API)...");
-		//Time how long it takes
-		long curTime = System.currentTimeMillis();
-		//Build authenticated credential
-		GoogleCredential newCredential = new GoogleCredential.Builder()
-				.setTransport(httpTransport)
-				.setClientSecrets(Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
-				.build()
-				.setAccessToken(accessToken);
-		//Get time difference
-		int timeDif = (int)(System.currentTimeMillis() - curTime);
-		//Print out time taken
-		System.out.printf("Drive credential built in %d ms%n", timeDif);
+		System.out.printf("(%d ms)%n", timeDif);
 		//Return new credential
 		return newCredential;
 	}
@@ -214,7 +188,7 @@ public class TeamAPI {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
-		System.out.println("Building Sheets service...");
+		System.out.print("Building Sheets Service...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 	    //Build a Sheets object
@@ -224,7 +198,7 @@ public class TeamAPI {
 	    //Get time difference
 	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Sheets service build in %d ms%n", timeDif);
+	    System.out.printf("(%d ms)%n", timeDif);
 	    //Return new Sheets object
 	    return sheets;
 	}
@@ -240,7 +214,7 @@ public class TeamAPI {
 		//Create new transport
 		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
-		System.out.println("Building Drive service...");
+		System.out.print("Building Drive Service...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build drive object and return it
@@ -250,7 +224,7 @@ public class TeamAPI {
 		//Get time difference
 	    int timeDif = (int)(System.currentTimeMillis() - curTime);
 	    //Print out time taken
-	    System.out.printf("Drive service build in %d ms%n", timeDif);
+	    System.out.printf("(%d ms)%n", timeDif);
 	    //Print out break
 	    System.out.println("-----------------------------------------------------------");
 	    //Return new Drive object 
@@ -263,65 +237,23 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException 
 	 */
-	public String setAccessToken_sheets() throws IOException, GeneralSecurityException{
+	public String setAccessToken() throws IOException, GeneralSecurityException{
 		/*
 		 * Note to users who plan to use this:
 		 * 
 		 * On Github, the Constants.java file will not show since I put it in 
-		 * git ignore, due to it having sensitive data. In order to use this on
-		 * your own, make a new file Constants.java as an interface, and simply input
-		 * the values "GOOGLE_CLIENT_ID_SHEETS" and "GOOGLE_CLIENT_SECRET_SHEETS", as well as 
-		 * "GOOGLE_REFRESH_TOKEN_SHEETS".
+		 * gitignore. In order to use this on your own, make a new file 
+		 * Constants.java as an interface, and simply input
+		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET", as well as 
+		 * "GOOGLE_REFRESH_TOKEN".
 		 */
 		//Create a token response using refresh token and oauth credentials
 		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.GOOGLE_REFRESH_TOKEN_SHEETS, Constants.GOOGLE_CLIENT_ID_SHEETS, Constants.GOOGLE_CLIENT_SECRET_SHEETS)
+				Constants.GOOGLE_REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
 				.execute();
 		//Set the access token
 		return token_response.getAccessToken();   
 	}
-	
-	/**
-	 * Retrieves an access token using the refresh token for the Drive API
-	 * 
-	 * @throws IOException for when an I/O error occurs
-	 * @throws GeneralSecurityException
-	 */
-	public String setAccessToken_drive() throws IOException, GeneralSecurityException {
-		/*
-		 * Note to users who plan to use this:
-		 * 
-		 * On Github, the Constants.java file will not show since I put it in 
-		 * git ignore, due to it having sensitive data. In order to use this on
-		 * your own, make a new file Constants.java as an interface, and simply input
-		 * the values "GOOGLE_CLIENT_ID_DRIVE" and "GOOGLE_CLIENT_SECRET_DRIVE", as well as 
-		 * "GOOGLE_REFRESH_TOKEN_DRIVE".
-		 */
-		//Create a token response using refresh token and oauth credentials
-		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.GOOGLE_REFRESH_TOKEN_DRIVE, Constants.GOOGLE_CLIENT_ID_DRIVE, Constants.GOOGLE_CLIENT_SECRET_DRIVE)
-				.execute();
-		//Set the access token
-		return token_response.getAccessToken();
-	}
-	
-	//IMPLEMENT LATER - GETTING TOKENS FROM AUTHORIZATION CODE USING POST
-	/*
-	public void setTokens() throws ClientProtocolException, IOException {
-		HttpClient client = new DefaultHttpClient();
-		HttpPost post = new HttpPost("https://accounts.google.com/o/oauth2/token");
-		List<NameValuePair> pairs = new ArrayList<>();
-		pairs.add(new BasicNameValuePair("code", Constants.GOOGLE_OAUTH2_AUTHCODE));
-	    pairs.add(new BasicNameValuePair("client_id", Constants.GOOGLE_CLIENT_ID));
-	    pairs.add(new BasicNameValuePair("client_secret", Constants.GOOGLE_CLIENT_SECRET));
-	    pairs.add(new BasicNameValuePair("redirect_uri", "https://developers.google.com/oauthplayground"));
-	    pairs.add(new BasicNameValuePair("grant_type", "authorization_code"));
-	    post.setEntity(new UrlEncodedFormEntity(pairs));
-	    org.apache.http.HttpResponse response = client.execute(post);
-	    String responseBody = EntityUtils.toString(response.getEntity());
-	    System.out.println(responseBody);
-	}
-	*/
 	
 	/*
 	------------------------------------------------------------------------------------------
@@ -338,7 +270,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
-		System.out.printf("Creating Google Sheet for Event%n");
+		System.out.printf("Creating Google Sheet...%n");
 		//Time how long algorithm takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
@@ -355,7 +287,7 @@ public class TeamAPI {
 		//Get how long algorithm has taken
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print success message(Format below)
-		System.out.printf("Sheet Created In %d ms%n%s%n", timeTaken, this.spreadsheetURL);
+		System.out.printf("Sheet Created In (%d) ms%n%s%n", timeTaken, this.spreadsheetURL);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -388,7 +320,7 @@ public class TeamAPI {
 				.setIncludeValuesInResponse(false)
 				.execute();
 		//Print initialize message
-		System.out.printf("Team Count - %d Teams(Season:%s)%n", teamList.length, this.season);
+		System.out.printf("Preparing (%d) Teams (Season:%s)%n", teamList.length, this.season);
 		//Start with ArrayList, cast to List later
 		List<List<Object>> values = new ArrayList<List<Object>>();
 		//Loop through team list
@@ -414,7 +346,7 @@ public class TeamAPI {
 			//Time taken
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print-out
-			System.out.printf("Team %s inputted in %d ms\n", n.toString(), timeTaken);
+			System.out.printf("Team %s inputted in (%d) ms\n", n.toString(), timeTaken);
 		}
 		//Time how long the write request takes
 		long writeTime = System.currentTimeMillis();
@@ -434,13 +366,13 @@ public class TeamAPI {
 		//Time how long the write request takes
 		long writeTimeTaken = System.currentTimeMillis() - writeTime;
 		//Print out how long write time took
-		System.out.printf("Write time:%f\n", (double)writeTimeTaken/1000);
+		System.out.printf("Write time: (%d) ms\n", writeTimeTaken);
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
 		double runtimeInSeconds = (double)runtime/1000;
 		//Print success message
-		System.out.printf("Success - %d Teams updated in %f seconds\n", teamList.length, runtimeInSeconds);
+		System.out.printf("Success - %d Teams Updated in %.2f Seconds\n", teamList.length, runtimeInSeconds);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -478,9 +410,8 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private void transferOwnership(Drive driveService, String usrEmail) throws IOException {
-		String permissionId = setPermissionId(driveService);
 		//Print message
-		System.out.printf("Transferring ownership to %s...%n", usrEmail);
+		System.out.printf("Transferring ownership to %s...", usrEmail);
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Build request body
@@ -489,27 +420,31 @@ public class TeamAPI {
 				.setType("user")
 				.setEmailAddress(usrEmail);
 		//Execute Drive request to transfer ownership
-		@SuppressWarnings("unused")
-		Permission permission = driveService.permissions().create(this.spreadsheetId, body)
-				.setFileId(this.spreadsheetId)
-				.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
-				.setSendNotificationEmail(true)
-				.setSupportsTeamDrives(true)
-				.setTransferOwnership(true)
-				.setUseDomainAdminAccess(true)
-				.setFields("emailAddress")
-				.execute();
-		//Execute drive request to remove current email from sheet
-		driveService.permissions().delete(this.spreadsheetId,  permissionId)
-				.setFileId(this.spreadsheetId)
-				.setPermissionId(permissionId)
-				.setSupportsTeamDrives(true)
-				.setUseDomainAdminAccess(false)
-				.execute();
-		//Time taken
-		long timeTaken = System.currentTimeMillis() - curTime;
-		//Print message
-		System.out.printf("Ownership transferred to %s(%d ms)%n", usrEmail, timeTaken);
+		try {
+			driveService.permissions().create(this.spreadsheetId, body)
+					.setFileId(this.spreadsheetId)
+					.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
+					.setSendNotificationEmail(true)
+					.setSupportsTeamDrives(false)
+					.setTransferOwnership(true)
+					.setUseDomainAdminAccess(false)
+					.execute();
+			//Execute drive request to remove current email from sheet
+			String permissionId = setPermissionId(driveService);
+			driveService.permissions().delete(this.spreadsheetId,  permissionId)
+					.setFileId(this.spreadsheetId)
+					.setPermissionId(permissionId)
+					.setSupportsTeamDrives(false)
+					.setUseDomainAdminAccess(false)
+					.execute();
+			//Time taken
+			long timeTaken = System.currentTimeMillis() - curTime;
+			//Print message
+			System.out.printf("(%d ms)%n", timeTaken);
+		}catch(com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
+			System.err.println("\nTRANSFER REQUEST ERROR");
+			System.err.println(e.getMessage() + "\n");
+		}
 	}
 	
 	/*
@@ -533,8 +468,9 @@ public class TeamAPI {
 	 * season tied to the RobotEvents link. If not empty, it will use the season specified.
 	 * </p>
 	 * <p>
-	 * <b>Note:</b> Team lists can only be generated <u>4 weeks</u> before the start date
-	 * of the tournament
+	 * <b>Note:</b> Team lists can only be generated <i>4 weeks</i> before the start date
+	 * of the tournament. Trying to do so will cause the program to stop. This is because
+	 * of restrictions in the VexDB database.
 	 * </p>
 	 * 
 	 * @param s the URL of the robot events link
@@ -564,8 +500,19 @@ public class TeamAPI {
 		this.eventName = eventJson.getString("name");
 		//Print event name
 		System.out.printf("Event Name: %s%n", this.eventName);
+		//Print out event code
+		System.out.printf("Event Code: %s\n", this.sku);
 		//Print season for stats
-		System.out.printf("Season for team stats: %s\n", this.season);
+		System.out.printf("Season: %s\n", this.season);
+		//Print out venue name
+		System.out.printf("Venue: %s\n", eventJson.getString("loc_venue"));
+		//Print out address
+		System.out.printf("Address: %s\n", eventJson.getString("loc_address1"));
+		//Print out city/state
+		System.out.printf("\t%s, %s %s\n", eventJson.getString("loc_city"), eventJson.getString("loc_region"),
+				eventJson.getString("loc_postcode"));
+		//Print out county
+		System.out.printf("Country: %s\n", eventJson.getString("loc_country"));
 		//Set event date(only grab start day, ignore time)
 		//Format: YYYY-MM-DD
 		this.eventDate = eventJson.getString("start").split("T")[0];
@@ -588,12 +535,12 @@ public class TeamAPI {
 	 * Checks the current date and compares it to the event date(more specifically,
 	 * it compares it to the date exactly <u>28 days(4 weeks)</u> before the event date). 
 	 * <p>
-	 * If the current date isn't within <u>4 weeks</u> of the event date(or the event hasn't already happened), then 
+	 * If the current date isn't within <u>4 weeks(28 days)</u> of the event date(or the event hasn't already happened), then 
 	 * the program will log it as an error and exit with an error code.
 	 * </p>
 	 * <p>
 	 * If the current date is within <u>4 weeks</u> of the event date(or the event has already happened), then
-	 * the program will simply continue.
+	 * the program will continue.
 	 * </p>
 	 */
 	public void checkDate(){
@@ -734,7 +681,7 @@ public class TeamAPI {
 	}
 	
 	/**
-	 * Defaults the first column of the spreadsheet to proper values
+	 * Defaults the first column of the spreadsheet to proper values.
 	 * 
 	 * @param a the array of strings that will be used for the first column
 	 */
