@@ -12,6 +12,7 @@ public class Tester {
 		String eventLink5 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5915.html"; //El Camino Turning Point
 		String eventLink6 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5481.html"; //First for 2018-2019
 		String eventLink7 = "https://www.robotevents.com/robot-competitions/vex-iq-challenge/RE-VIQC-18-7854.html"; //Tester for IQ
+		String eventLink8 = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-7675.html"; //2019 CA State HS San Diego
 		//Set email for user to transfer ownership to
 		String usrEmail = "iragequitwup123zz@gmail.com";
 		//Essentially grab all data and set it(constructor body calls create and write methods)

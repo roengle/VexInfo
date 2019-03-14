@@ -24,10 +24,17 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
 import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.model.About;
 import com.google.api.services.drive.model.Permission;
 
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.model.AddConditionalFormatRuleRequest;
+import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
+import com.google.api.services.sheets.v4.model.BooleanCondition;
+import com.google.api.services.sheets.v4.model.BooleanRule;
+import com.google.api.services.sheets.v4.model.Color;
+import com.google.api.services.sheets.v4.model.ConditionValue;
+import com.google.api.services.sheets.v4.model.ConditionalFormatRule;
+import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
@@ -95,6 +102,8 @@ public class TeamAPI {
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply conditional formatting
+		applyConditionalFormatting(sheetsService);
 		//Transfer ownership
 		transferOwnership(driveService, usrEmail);
 	}
@@ -138,6 +147,8 @@ public class TeamAPI {
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply conditional formatting
+		applyConditionalFormatting(sheetsService);
 		//Transfer ownership
 		transferOwnership(driveService, usrEmail);
 	}
@@ -270,7 +281,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	public void executeCreateRequest(Sheets sheetsService) throws IOException {
-		System.out.printf("Creating Google Sheet...%n");
+		System.out.printf("Creating Google Sheet...");
 		//Time how long algorithm takes
 		long curTime = System.currentTimeMillis();
 		//Create a request body and set appropriate title
@@ -287,7 +298,7 @@ public class TeamAPI {
 		//Get how long algorithm has taken
 		long timeTaken = System.currentTimeMillis() - curTime;
 		//Print success message(Format below)
-		System.out.printf("Sheet Created In (%d) ms%n%s%n", timeTaken, this.spreadsheetURL);
+		System.out.printf("(%d) ms%n%s%n", timeTaken, this.spreadsheetURL);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -302,8 +313,6 @@ public class TeamAPI {
 	public void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
 		//Debugging for how long algorithm takes to run with certain data sets
 		long startTime = System.currentTimeMillis();
-		//Initialize ApilRateLimiter object
-		//ApilRateLimiter apiRateLimiter = new ApilRateLimiter(Constants.SHEETS_QUOTA_PER_SECOND); // Currently not using
 		//Build column #1 of the spreadsheet
 		String[] names = new String[19];
 		//Put default column #1 values
@@ -377,6 +386,137 @@ public class TeamAPI {
 		System.out.println("-----------------------------------------------------------");
 	}
 	
+	/**
+	 * Applies conditional formatting to the sheet to highlight the sections with "NOT_FOUND" text.
+	 * For all cells except ones for skills, this color will be red. For skills cells, this will be 
+	 * orange. 
+	 * 
+	 * @param sheetsService the Sheets object with an authenticated credential
+	 * @throws IOException for when an I/O error occurs
+	 */
+	public void applyConditionalFormatting(Sheets sheetsService) throws IOException {
+		//Get start time to time how long it takes
+		long startTime = System.currentTimeMillis();
+		//Verbose message
+		System.out.printf("Applying conditional formatting...");
+		/*-------First conditional formatting(RED highlighting)---------------*/
+		//Build ranges(use sheets GridRange, not Java.util)
+		com.google.api.services.sheets.v4.model.GridRange ranges1_1 = new com.google.api.services.sheets.v4.model.GridRange();
+		ranges1_1.setSheetId(0);
+		ranges1_1.setStartColumnIndex(5);
+		ranges1_1.setEndColumnIndex(14);
+		ranges1_1.setStartRowIndex(1);
+		com.google.api.services.sheets.v4.model.GridRange ranges1_2 = new com.google.api.services.sheets.v4.model.GridRange();
+		ranges1_2.setSheetId(0);
+		ranges1_2.setStartColumnIndex(17);
+		ranges1_2.setEndColumnIndex(18);
+		ranges1_2.setStartRowIndex(1);
+		List<com.google.api.services.sheets.v4.model.GridRange> ranges1 = new ArrayList<>();
+		ranges1.add(ranges1_1);
+		ranges1.add(ranges1_2);
+		
+		//Build values
+		List<ConditionValue> values1 = new ArrayList<>();
+		values1.add(new ConditionValue().setUserEnteredValue("NOT_FOUND"));
+		//Build condition
+		BooleanCondition condition1 = new BooleanCondition();
+		condition1.setType("TEXT_EQ");
+		condition1.setValues(values1);
+		
+		//Build backGroundColor
+		Color backgroundColor1 = new Color()
+				.setRed((float)1.0);
+		//Build format
+		com.google.api.services.sheets.v4.model.CellFormat format1 = new com.google.api.services.sheets.v4.model.CellFormat()
+				.setBackgroundColor(backgroundColor1);
+		
+		//Build booleanRule
+		BooleanRule booleanRule1 = new BooleanRule();
+		booleanRule1.setCondition(condition1);
+		booleanRule1.setFormat(format1);
+		
+		//Build ConditionalFormatRule
+		ConditionalFormatRule rule1 = new ConditionalFormatRule();
+		rule1.setRanges(ranges1);
+		rule1.setBooleanRule(booleanRule1);
+		
+		//Build AddConditionalFormatRule request
+		AddConditionalFormatRuleRequest conditionalFormatRule1 = new AddConditionalFormatRuleRequest();
+		conditionalFormatRule1.setRule(rule1);
+		conditionalFormatRule1.setIndex(0);
+		
+		//Create list of requests
+		List<Request> requests1 = new ArrayList<>();
+		requests1.add(new Request().setAddConditionalFormatRule(conditionalFormatRule1));
+		//Build request body
+		BatchUpdateSpreadsheetRequest requestBody1 = new BatchUpdateSpreadsheetRequest()
+				.setRequests(requests1);
+		//Build the request
+		Sheets.Spreadsheets.BatchUpdate request1 = sheetsService
+				.spreadsheets().batchUpdate(this.spreadsheetId, requestBody1);
+		//Execute request
+		request1.execute();
+		
+		/*-------------Second conditional formatting(ORANGE highlighting)-----------------*/
+		
+		//Build ranges(use sheets GridRange, not Java.util)
+		com.google.api.services.sheets.v4.model.GridRange ranges2_1 = new com.google.api.services.sheets.v4.model.GridRange();
+		ranges2_1.setSheetId(0);
+		ranges2_1.setStartColumnIndex(14);
+		ranges2_1.setEndColumnIndex(17);
+		ranges2_1.setStartRowIndex(1);
+		List<com.google.api.services.sheets.v4.model.GridRange> ranges2 = new ArrayList<>();
+		ranges2.add(ranges2_1);
+		
+		//Build values
+		List<ConditionValue> values2 = new ArrayList<>();
+		values2.add(new ConditionValue().setUserEnteredValue("NOT_FOUND"));
+		//Build condition
+		BooleanCondition condition2 = new BooleanCondition();
+		condition2.setType("TEXT_EQ");
+		condition2.setValues(values2);
+		
+		//Build backGroundColor
+		Color backgroundColor2 = new Color()
+				.setRed((float)1.0)
+				.setGreen((float)0.71)
+				.setBlue((float)0.24);
+		//Build format
+		com.google.api.services.sheets.v4.model.CellFormat format2 = new com.google.api.services.sheets.v4.model.CellFormat()
+				.setBackgroundColor(backgroundColor2);
+		
+		//Build booleanRule
+		BooleanRule booleanRule2 = new BooleanRule();
+		booleanRule2.setCondition(condition2);
+		booleanRule2.setFormat(format2);
+		
+		//Build ConditionalFormatRule
+		ConditionalFormatRule rule2 = new ConditionalFormatRule();
+		rule2.setRanges(ranges2);
+		rule2.setBooleanRule(booleanRule2);
+		
+		//Build AddConditionalFormatRule request
+		AddConditionalFormatRuleRequest conditionalFormatRule2 = new AddConditionalFormatRuleRequest();
+		conditionalFormatRule2.setRule(rule2);
+		conditionalFormatRule2.setIndex(0);
+		
+		//Create list of requests
+		List<Request> requests2 = new ArrayList<>();
+		requests2.add(new Request().setAddConditionalFormatRule(conditionalFormatRule2));
+		//Build request body
+		BatchUpdateSpreadsheetRequest requestBody2 = new BatchUpdateSpreadsheetRequest()
+				.setRequests(requests2);
+		//Build the request
+		Sheets.Spreadsheets.BatchUpdate request2 = sheetsService
+				.spreadsheets().batchUpdate(this.spreadsheetId, requestBody2);
+		//Execute request
+		request2.execute();
+		
+		//Get how long it took
+		long runtime = System.currentTimeMillis() - startTime;
+		System.out.printf("(%d ms)\n", runtime);
+	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -392,12 +532,8 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 */
 	private String setPermissionId(Drive driveService) throws IOException {
-		//Create About object which holds permission Id for current Drive auth
-		About response = driveService.about().get()
-					.setFields("user/permissionId")
-					.execute();
-		//Return the permissionId
-		return new JSONObject(response.toString())
+		//Return get the permission ID using Drive.about.get
+		return new JSONObject(driveService.about().get().setFields("user/permissionId").execute())
 				.getJSONObject("user")
 				.getString("permissionId");
 	}
@@ -414,13 +550,14 @@ public class TeamAPI {
 		System.out.printf("Transferring ownership to %s...", usrEmail);
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
-		//Build request body
-		Permission body = new Permission()
-				.setRole("owner")
-				.setType("user")
-				.setEmailAddress(usrEmail);
-		//Execute Drive request to transfer ownership
+		//Use try-catch to catch if the program cannot transfer ownership
 		try {
+			//Build request body
+			Permission body = new Permission()
+					.setRole("owner")
+					.setType("user")
+					.setEmailAddress(usrEmail);
+			//Execute Drive request to transfer ownership
 			driveService.permissions().create(this.spreadsheetId, body)
 					.setFileId(this.spreadsheetId)
 					.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
@@ -522,8 +659,9 @@ public class TeamAPI {
 		JSONArray result = Team.TeamBuilder
 				.readJsonFromUrl("https://api.vexdb.io/v1/get_teams?sku=" + this.sku)
 				.getJSONArray("result");
-		//Build team list
+		//Initialize team list
 		String[] teams = new String[result.length()];
+		//Fill the team list
 		for(int i = 0; i < result.length(); i++) {
 			teams[i] = result.getJSONObject(i).getString("number");
 		}
@@ -558,11 +696,11 @@ public class TeamAPI {
 		c.set(Calendar.MILLISECOND, 0);
 		//Put into date object
 		Date today = c.getTime();
-		//Get event date in an array of strings
-		//Format: YYYY-MM-DD
+		//Get event date in an array of strings(Format: YYYY-MM-DD)
 		String[] eventTimeInfoStr = this.eventDate.split("-");
 		//Initialize and convert string array to int array
 		int[] eventTimeInfo = new int[3];
+		//Loop through array to fill with integers
 		for(int i = 0; i < eventTimeInfo.length; i++) {
 			eventTimeInfo[i] = Integer.parseInt(eventTimeInfoStr[i]);
 		}
@@ -576,17 +714,20 @@ public class TeamAPI {
 		//Check date with this specified date
 		Date dateSpecified = c.getTime();
 		//If current Date is greater than 4 weeks before the event
-		if(today.before(dateSpecified)) {
+		if(today.before(dateSpecified)) { //Date restriction not met
 			//Get difference of dates in milliseconds
 			long difInMs = dateSpecified.getTime() - today.getTime();
 			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
+			//Create a DateFormat object to get desired format for date
 			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+			//Print out dates
 			System.out.printf("Today:%s\n", df.format(today));
 			System.out.printf("Actual:%s\n", df.format(eventDateActual));
 			System.out.printf("Specified:%s\n", df.format(dateSpecified));
 			//Log the issue
 			LOGGER.error(String.format("Requirement not met. Wait (%d) days.", dayDifference));
+			//Print out messages
 			System.out.println("DATE CHECK:FALSE");
 			System.err.println("CANNOT GET DATA FROM API UNTIL 4-WEEK RESTRICTION MET");
 			System.err.printf("WAIT (%d) DAYS%nEXITING PROGRAM(1)%n", dayDifference);
