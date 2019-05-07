@@ -31,12 +31,17 @@ import com.google.api.services.sheets.v4.model.AddConditionalFormatRuleRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BooleanCondition;
 import com.google.api.services.sheets.v4.model.BooleanRule;
+import com.google.api.services.sheets.v4.model.CellFormat;
 import com.google.api.services.sheets.v4.model.Color;
 import com.google.api.services.sheets.v4.model.ConditionValue;
 import com.google.api.services.sheets.v4.model.ConditionalFormatRule;
+import com.google.api.services.sheets.v4.model.GradientRule;
+import com.google.api.services.sheets.v4.model.GridRange;
+import com.google.api.services.sheets.v4.model.InterpolationPoint;
 import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
+import com.google.api.services.sheets.v4.model.TextFormat;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
@@ -399,21 +404,17 @@ public class TeamAPI {
 		long startTime = System.currentTimeMillis();
 		//Verbose message
 		System.out.printf("Applying conditional formatting...");
-		/*-------First conditional formatting(RED highlighting)---------------*/
+		
+		/*-------First conditional formatting(Italic on NOT_FOUND)---------------*/
+		
 		//Build ranges(use sheets GridRange, not Java.util)
 		com.google.api.services.sheets.v4.model.GridRange ranges1_1 = new com.google.api.services.sheets.v4.model.GridRange();
 		ranges1_1.setSheetId(0);
 		ranges1_1.setStartColumnIndex(5);
-		ranges1_1.setEndColumnIndex(14);
+		ranges1_1.setEndColumnIndex(18);
 		ranges1_1.setStartRowIndex(1);
-		com.google.api.services.sheets.v4.model.GridRange ranges1_2 = new com.google.api.services.sheets.v4.model.GridRange();
-		ranges1_2.setSheetId(0);
-		ranges1_2.setStartColumnIndex(17);
-		ranges1_2.setEndColumnIndex(18);
-		ranges1_2.setStartRowIndex(1);
 		List<com.google.api.services.sheets.v4.model.GridRange> ranges1 = new ArrayList<>();
 		ranges1.add(ranges1_1);
-		ranges1.add(ranges1_2);
 		
 		//Build values
 		List<ConditionValue> values1 = new ArrayList<>();
@@ -423,12 +424,9 @@ public class TeamAPI {
 		condition1.setType("TEXT_EQ");
 		condition1.setValues(values1);
 		
-		//Build backGroundColor
-		Color backgroundColor1 = new Color()
-				.setRed((float)1.0);
-		//Build format
+		//Build format(use italic for NOT_FOUND)
 		com.google.api.services.sheets.v4.model.CellFormat format1 = new com.google.api.services.sheets.v4.model.CellFormat()
-				.setBackgroundColor(backgroundColor1);
+				.setTextFormat(new TextFormat().setItalic(true));
 		
 		//Build booleanRule
 		BooleanRule booleanRule1 = new BooleanRule();
@@ -451,68 +449,101 @@ public class TeamAPI {
 		//Build request body
 		BatchUpdateSpreadsheetRequest requestBody1 = new BatchUpdateSpreadsheetRequest()
 				.setRequests(requests1);
-		//Build the request
-		Sheets.Spreadsheets.BatchUpdate request1 = sheetsService
-				.spreadsheets().batchUpdate(this.spreadsheetId, requestBody1);
-		//Execute request
-		request1.execute();
+		//Build and execute request
+		sheetsService.spreadsheets()
+			.batchUpdate(this.spreadsheetId, requestBody1)
+			.execute();
+
+		/*------------------------------Apply Gradients-----------------------------------*/
 		
-		/*-------------Second conditional formatting(ORANGE highlighting)-----------------*/
-		
-		//Build ranges(use sheets GridRange, not Java.util)
-		com.google.api.services.sheets.v4.model.GridRange ranges2_1 = new com.google.api.services.sheets.v4.model.GridRange();
-		ranges2_1.setSheetId(0);
-		ranges2_1.setStartColumnIndex(14);
-		ranges2_1.setEndColumnIndex(17);
-		ranges2_1.setStartRowIndex(1);
-		List<com.google.api.services.sheets.v4.model.GridRange> ranges2 = new ArrayList<>();
-		ranges2.add(ranges2_1);
-		
-		//Build values
-		List<ConditionValue> values2 = new ArrayList<>();
-		values2.add(new ConditionValue().setUserEnteredValue("NOT_FOUND"));
-		//Build condition
-		BooleanCondition condition2 = new BooleanCondition();
-		condition2.setType("TEXT_EQ");
-		condition2.setValues(values2);
-		
-		//Build backGroundColor
-		Color backgroundColor2 = new Color()
-				.setRed((float)1.0)
-				.setGreen((float)0.71)
-				.setBlue((float)0.24);
-		//Build format
-		com.google.api.services.sheets.v4.model.CellFormat format2 = new com.google.api.services.sheets.v4.model.CellFormat()
-				.setBackgroundColor(backgroundColor2);
-		
-		//Build booleanRule
-		BooleanRule booleanRule2 = new BooleanRule();
-		booleanRule2.setCondition(condition2);
-		booleanRule2.setFormat(format2);
-		
-		//Build ConditionalFormatRule
-		ConditionalFormatRule rule2 = new ConditionalFormatRule();
-		rule2.setRanges(ranges2);
-		rule2.setBooleanRule(booleanRule2);
-		
-		//Build AddConditionalFormatRule request
-		AddConditionalFormatRuleRequest conditionalFormatRule2 = new AddConditionalFormatRuleRequest();
-		conditionalFormatRule2.setRule(rule2);
-		conditionalFormatRule2.setIndex(0);
-		
-		//Create list of requests
-		List<Request> requests2 = new ArrayList<>();
-		requests2.add(new Request().setAddConditionalFormatRule(conditionalFormatRule2));
-		//Build request body
-		BatchUpdateSpreadsheetRequest requestBody2 = new BatchUpdateSpreadsheetRequest()
-				.setRequests(requests2);
-		//Build the request
-		Sheets.Spreadsheets.BatchUpdate request2 = sheetsService
-				.spreadsheets().batchUpdate(this.spreadsheetId, requestBody2);
-		//Execute request
-		request2.execute();
-		
-		//Get how long it took
+		/* Build ranges */
+		/**
+		 * Using a loop like this creates a bunch of conditional formats, but allows each column to have its own gradient.
+		 */
+		for(int i = 5; i < 18; i++) {
+			//Initialize list for ranges
+			List<GridRange> gradientRanges = new ArrayList<>();	
+			//Add respective range
+			gradientRanges.add(new GridRange().setSheetId(0).setStartColumnIndex(i).setEndColumnIndex((i + 1)));
+			/* Build Colors */
+			
+			//Create color for minpoint
+			Color minColor = new Color()
+					.setRed((float)0.796875);
+			//Create color for midpoint
+			Color midColor = new Color()
+					.setRed((float)0.94140625)
+					.setGreen((float)0.7578125)
+					.setBlue((float)0.1953125);
+			//Create color for maxpoint
+			Color maxColor = new Color()
+					.setGreen((float)1.0);
+			
+			/* Build InterpolationPoint(s)*/
+			
+			//Create and build InterpolationPoint for minpoint(if i equals 6, reverse from min to max, since lower is beeter for dpr)
+			InterpolationPoint min = i != 6 || i != 11 ? 
+				new InterpolationPoint()
+					.setColor(minColor)
+					.setType("MIN") 
+				: 
+				new InterpolationPoint()
+					.setColor(maxColor)
+					.setType("MIN");
+			//Create and build InterpolationPoint for midpoint
+			InterpolationPoint mid = new InterpolationPoint()
+				.setColor(midColor)
+				.setType("PERCENT")
+				.setValue("50");		
+			//Create and build InterpolationPoint for maxpoint(if i equals 6, reverse from max to min, since lower is better for dpr)
+			InterpolationPoint max = i != 6 || i != 11 ? 
+					new InterpolationPoint()
+						.setColor(maxColor)
+						.setType("MAX") 
+					: 
+					new InterpolationPoint()
+						.setColor(minColor)
+						.setType("MAX");
+						
+			/* Build gradientRule */
+			
+			GradientRule gradientRule = new GradientRule()
+					.setMinpoint(min)
+					.setMidpoint(mid)
+					.setMaxpoint(max);
+			
+			/* Build ConditionalFormatRule */
+			
+			ConditionalFormatRule gradient_conditionalFormatRule = new ConditionalFormatRule()
+					.setRanges(gradientRanges)
+					.setGradientRule(gradientRule);
+			
+			/* Build AddConditionalFormatRuleRequest */
+			
+			AddConditionalFormatRuleRequest gradient_addConditionalFormatRuleRequest = new AddConditionalFormatRuleRequest()
+					.setRule(gradient_conditionalFormatRule)
+					.setIndex(0);
+			
+			/* Create list of requests */
+			
+			//Make list of requests
+			List<Request> gradient_requests = new ArrayList<>();
+			//Add our conditionalFormatRuleRequest
+			gradient_requests.add(new Request().setAddConditionalFormatRule(gradient_addConditionalFormatRuleRequest));
+			
+			/* Build BatchUpdateSpreadsheetRequest */
+			
+			//Build request body
+			BatchUpdateSpreadsheetRequest gradient_mainRequestBody = new BatchUpdateSpreadsheetRequest()
+					.setRequests(gradient_requests);
+			
+			/* Build and execute request*/
+			sheetsService.spreadsheets()
+				.batchUpdate(this.spreadsheetId, gradient_mainRequestBody)
+				.execute();
+		}
+			
+		/*----------------------------------Runtime----------------------------*/
 		long runtime = System.currentTimeMillis() - startTime;
 		System.out.printf("(%d ms)\n", runtime);
 	}
