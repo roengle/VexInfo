@@ -2,6 +2,10 @@
 
 VexInfo is made to allow for data of VEX EDR teams to be easily accesable. Currently, it can take a [RobotEvents](https://robotevents.com) URL of a VEX EDR tournament, and compile statistics for each team competing. 
 
+# Motivation
+
+The motivation for this project came from a problem that would come up whever scouting out tournaments was being discussed--a way to access statistics for the teams present. Seeing that there wasn't another project to take on this task, I took on the challenge of making my first program that would actually be useful.
+
 ## How it Works
 
  1) Given a [RobotEvents](https://robotevents.com) URL, the program acquires the events *SKU*, which looks like `RE-VRC-XX-XXXX`. 
@@ -45,20 +49,33 @@ TeamAPI api = new TeamAPI(put-event-link-here, put-new-ownership-user-email-here
 
 For example, obtaining statistics for 2019 Worlds and transferring it to an email address(note: this process takes quite a long time, 
 due to how many calculations it must perform(about 500 teams!), and also the fact that it only operates on a single-thread):
+
 ```
 TeamAPI api = new TeamAPI("https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-6082.html", robertibengle@gmail.com);
 ```
 
 ## APIs Used
+
 * [VexDB API v1](https://vexdb.io/the_data) - API used to obtain all team data.
 * [Google Sheets API v4](https://developers.google.com/sheets/api/) - API used to write data to sheet.
 * [Google Drive API v3](https://developers.google.com/drive/) - API used to transfer ownership of sheet.
 
 ## Built With
+
 * [Maven](https://maven.apache.org/) - Dependency Management
 
+## Versioning
+
+[SemVar](http://semvar.org/) is used for versioning. For the versions available, see the [tags on this repository](https://github.com/Wup123102/VexInfo/tags).
+
 ## Authors
+
 * **Robert Engle** - *Creator* - [Wup123102](https://github.com/Wup123102)
+
+## Worlds Events Sheets
+
+* [Worlds 2018 HS Sheet](https://docs.google.com/spreadsheets/d/1-Syt6zZK2tIxF6CWU4wcxrpAXvvUfb0fjPMlmVosJPE/edit?usp=sharing)
+* [Worlds 2019 HS Sheet](https://docs.google.com/spreadsheets/d/1SDmY9aumDRKqvlrNy0t9aHNP1IFTuEFWtXckGaDZpzQ/edit?usp=sharing)
 
 ## License
 
