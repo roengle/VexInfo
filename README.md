@@ -28,8 +28,7 @@ URL of a VEX EDR tournament, and compile statistics for each team competing.
 
 ### Setting up
 
-To set up this program for use, make sure to have Java 1.7.x or above. Clone into the repository. In the `src` folder, create a `.java` 
-file and put the following code in:
+To set up this program for use, make sure to have Java 1.7.x or above. Clone into the repository. In the `src` folder, create a file named `Constants.java` and put the following code in.
 
 ```
 public interface Constants {
@@ -40,10 +39,7 @@ public interface Constants {
 }
 ```
 
-Replace the according values above with your credentials. To run the program, run the `Tester` program. I have some test values 
-already in the program, but keep in mind this isn't a permanent solution. To have the whole process run, instantiate a `TeamAPI` object
-like so, replacing the proper values:
-
+Replace the according values above with your credentials(see "Getting Credentials"). To run the program, run the `Tester` program. I have some test values already in the program, but keep in mind this isn't a permanent solution. While the test program has the process start automatically, all that is needed is to instantiate a `TeamAPI` object like so, replacing the proper values:
 ```
 TeamAPI api = new TeamAPI(put-event-link-here, put-new-ownership-user-email-here);
 ```
@@ -62,3 +58,8 @@ TeamAPI api = new TeamAPI("https://www.robotevents.com/robot-competitions/vex-ro
 
 ## License
 
+This project is licensed under the GNU GPL v3.0 License - see the [LICENSE.md](LICENSE.MD) file for details.
+
+## Acknowledgements
+
+* My robotics advisor, Frank Menjivar, who always motivated me to strive for me, leading me to developing this project.
