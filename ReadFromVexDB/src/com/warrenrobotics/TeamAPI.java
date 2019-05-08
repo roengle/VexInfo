@@ -482,7 +482,7 @@ public class TeamAPI {
 			/* Build InterpolationPoint(s)*/
 			
 			//Create and build InterpolationPoint for minpoint(if i equals 6, reverse from min to max, since lower is beeter for dpr)
-			InterpolationPoint min = i != 6 || i != 11 ? 
+			InterpolationPoint min = (i != 6 && i != 11) ? 
 				new InterpolationPoint()
 					.setColor(minColor)
 					.setType("MIN") 
@@ -496,7 +496,7 @@ public class TeamAPI {
 				.setType("PERCENT")
 				.setValue("50");		
 			//Create and build InterpolationPoint for maxpoint(if i equals 6, reverse from max to min, since lower is better for dpr)
-			InterpolationPoint max = i != 6 || i != 11 ? 
+			InterpolationPoint max = (i != 6 && i != 11) ? 
 					new InterpolationPoint()
 						.setColor(maxColor)
 						.setType("MAX") 
