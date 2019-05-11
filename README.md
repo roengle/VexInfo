@@ -74,7 +74,11 @@ TeamAPI api = new TeamAPI("https://www.robotevents.com/robot-competitions/vex-ro
 
 ## Worlds Events Sheets
 
+* [Worlds 2017 MS Sheet](https://docs.google.com/spreadsheets/d/10zqWIbOEhHvc0FGhgJB6OBHfjgxY8x_m9Mpn1n8gigc/edit?usp=sharing)
+* [Worlds 2017 HS Sheet](https://docs.google.com/spreadsheets/d/1C_q8Cf-2Y-Lq_ij00v7KjIU9Uwmjew1PVXVNJsmffpQ/edit?usp=sharing)
+* [Worlds 2018 MS Sheet](https://docs.google.com/spreadsheets/d/1GRhYcvyfxWojKMFL27f82O6Jr2EqDcmOYKSgEU8Uu2M/edit?usp=sharing)
 * [Worlds 2018 HS Sheet](https://docs.google.com/spreadsheets/d/1-Syt6zZK2tIxF6CWU4wcxrpAXvvUfb0fjPMlmVosJPE/edit?usp=sharing)
+* [Worlds 2019 MS Sheet](https://docs.google.com/spreadsheets/d/1MJbDUgOZz4yt6syBj2W3u1SDRzM7p4fkdSSVdxXt_ek/edit?usp=sharing)
 * [Worlds 2019 HS Sheet](https://docs.google.com/spreadsheets/d/1SDmY9aumDRKqvlrNy0t9aHNP1IFTuEFWtXckGaDZpzQ/edit?usp=sharing)
 
 ## License
