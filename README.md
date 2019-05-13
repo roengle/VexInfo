@@ -66,7 +66,7 @@ TeamAPI api = new TeamAPI("https://www.robotevents.com/robot-competitions/vex-ro
 
 ## Versioning
 
-[SemVar](http://semvar.org/) is used for versioning. For the versions available, see the [tags on this repository](https://github.com/Wup123102/VexInfo/tags).
+[SemVer](https://semver.org/) is used for versioning. For the versions available, see the [tags on this repository](https://github.com/Wup123102/VexInfo/tags).
 
 ## Authors
 
