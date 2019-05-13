@@ -88,9 +88,7 @@ public class TeamAPI {
 	 */
 	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
-		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-		Date date = new Date();
-		System.out.printf("%s - Running Program%n", dateFormat.format(date));
+		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, "");
 		//Assign access tokens
@@ -134,11 +132,11 @@ public class TeamAPI {
 	 */
 	public TeamAPI(String link, String usrEmail, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
-		DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
-		Date date = new Date();
-		System.out.printf("%s - Running Program%n", dateFormat.format(date));
+		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, season);
+		//Print out estimated runtime
+		
 		//Assign access tokens
 		String accessToken = setAccessToken();
 		//Assign credentials
@@ -377,16 +375,17 @@ public class TeamAPI {
 			.setValueInputOption("USER_ENTERED")
 			.setIncludeValuesInResponse(false)
 			.execute();
+		System.out.print("Write Time...");
 		//Time how long the write request takes
 		long writeTimeTaken = System.currentTimeMillis() - writeTime;
 		//Print out how long write time took
-		System.out.printf("Write time: (%d) ms\n", writeTimeTaken);
+		System.out.printf("(%d) ms\n", writeTimeTaken);
 		//Establish how long algorithm took to run(milliseconds)
 		long runtime = System.currentTimeMillis() - startTime;
 		//Convert to seconds
 		double runtimeInSeconds = (double)runtime/1000;
 		//Print success message
-		System.out.printf("Success - %d Teams Updated in %.2f Seconds\n", teamList.length, runtimeInSeconds);
+		System.out.printf("Success - (%d) Teams Updated in (%.2f) Seconds\n", teamList.length, runtimeInSeconds);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -425,7 +424,7 @@ public class TeamAPI {
 		condition1.setValues(values1);
 		
 		//Build format(use italic for NOT_FOUND)
-		com.google.api.services.sheets.v4.model.CellFormat format1 = new com.google.api.services.sheets.v4.model.CellFormat()
+		CellFormat format1 = new CellFormat()
 				.setTextFormat(new TextFormat().setItalic(true));
 		
 		//Build booleanRule
@@ -698,6 +697,11 @@ public class TeamAPI {
 		}
 		//Set team list
 		this.teamList = teams;
+		//Print out estimated runtime
+		double estimatedRuntime = (2.0 + (0.3 * teamList.length) + 0.6 + 9.0 + 3.0);
+		System.out.printf("Estimated Runtime - (%.2f) seconds\n", estimatedRuntime);
+		//Print break
+		System.out.println("-----------------------------------------------------------");
 	}
 	
 	/**
