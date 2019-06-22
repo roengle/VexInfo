@@ -57,7 +57,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
  * To create a Google Sheet for an event, simply call the {@link TeamAPI} constructor, 
  * with the link of the event and the email to share the Sheet with.
  * </p>
- * @author Robert Engle | WHS Robotics | Team 90241B
+ * @author Robert Engle 
  * @version 1.2
  * @since 2018-02-21
  *

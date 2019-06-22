@@ -39,7 +39,7 @@ import java.nio.charset.Charset;
  * <p>
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
- * @author Robert Engle | WHS Robotics | Team 90241B
+ * @author Robert Engle 
  * @version 1.2
  * @since 2018-02-21
  */
