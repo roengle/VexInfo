@@ -1,6 +1,8 @@
 package com.warrenrobotics;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -15,18 +17,24 @@ import org.json.JSONObject;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-
+import com.google.api.client.util.store.MemoryDataStoreFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.Permission;
 
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.AddConditionalFormatRuleRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BooleanCondition;
@@ -95,20 +103,16 @@ public class TeamAPI {
 		String accessToken_sheets = setAccessToken();
 		String accessToken_drive = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential(accessToken_sheets);
-		GoogleCredential credential_drive = setCredential(accessToken_drive);
+		Credential credential_sheets = setCredential();
+		Credential credential_drive = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
-		//Create drive service with authenticated credential
-		Drive driveService = createDriveService(credential_drive);
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
-		//Transfer ownership
-		transferOwnership(driveService, usrEmail);
 	}
 	
 	/**
@@ -140,20 +144,16 @@ public class TeamAPI {
 		//Assign access tokens
 		String accessToken = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential(accessToken);
-		GoogleCredential credential_drive = setCredential(accessToken);
+		Credential credential_sheets = setCredential();
+		Credential credential_drive = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
-		//Create drive service with authenticated credential
-		Drive driveService = createDriveService(credential_drive);
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
-		//Transfer ownership
-		transferOwnership(driveService, usrEmail);
 	}
 	
 	/*
@@ -170,25 +170,28 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private GoogleCredential setCredential(String accessToken) throws GeneralSecurityException, IOException {
-		//Create new transport
-		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+	private Credential setCredential() throws GeneralSecurityException, IOException {
 	    //Print message
 		System.out.print("Building API Credential...");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
-		//Build authenticated credential
-		GoogleCredential newCredential = new GoogleCredential.Builder()
-				.setTransport(httpTransport)
-				.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
-				.build()
-				.setAccessToken(accessToken);
+		//Get a credential object using credentials
+		InputStream in = TeamAPI.class.getResourceAsStream("credentials.json");
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JacksonFactory.getDefaultInstance(), new InputStreamReader(in));
+
+        List<String> scopes = Arrays.asList(SheetsScopes.SPREADSHEETS);
+
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
+        		.Builder(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), clientSecrets, scopes)
+        		.setDataStoreFactory(new MemoryDataStoreFactory())
+                .setAccessType("offline").build();
+        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
+
 		//Get time difference
 		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
 		System.out.printf("(%d ms)%n", timeDif);
-		//Return new credential
-		return newCredential;
+		return credential;
 	}
 	
 	/**
@@ -198,7 +201,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
-	private Sheets createSheetsService(GoogleCredential cred) throws IOException, GeneralSecurityException {
+	private Sheets createSheetsService(Credential cred) throws IOException, GeneralSecurityException {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
@@ -215,34 +218,6 @@ public class TeamAPI {
 	    System.out.printf("(%d ms)%n", timeDif);
 	    //Return new Sheets object
 	    return sheets;
-	}
-	
-	/**
-	 * Creates a Drive object that can be used to make a request for data
-	 * 
-	 * @return a Drive object that can be used to edit permissions
-	 * @throws IOException for when an I/O error occurs
-	 * @throws GeneralSecurityException
-	 */
-	private Drive createDriveService(GoogleCredential cred) throws IOException, GeneralSecurityException{
-		//Create new transport
-		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
-		//Print message
-		System.out.print("Building Drive Service...");
-		//Time how long it takes
-		long curTime = System.currentTimeMillis();
-		//Build drive object and return it
-		Drive drive = new Drive.Builder(httpTransportDrive, jsonFactory, cred)
-				.setApplicationName("VexInfo.io - Drive Usage")
-				.build();
-		//Get time difference
-	    int timeDif = (int)(System.currentTimeMillis() - curTime);
-	    //Print out time taken
-	    System.out.printf("(%d ms)%n", timeDif);
-	    //Print out break
-	    System.out.println("-----------------------------------------------------------");
-	    //Return new Drive object 
-	    return drive;
 	}
 
 	/**
@@ -468,15 +443,15 @@ public class TeamAPI {
 			
 			//Create color for minpoint
 			Color minColor = new Color()
-					.setRed((float)0.796875);
+					.setRed(0.796875F);
 			//Create color for midpoint
 			Color midColor = new Color()
-					.setRed((float)0.94140625)
-					.setGreen((float)0.7578125)
-					.setBlue((float)0.1953125);
+					.setRed(0.94140625F)
+					.setGreen(0.7578125F)
+					.setBlue(0.1953125F);
 			//Create color for maxpoint
 			Color maxColor = new Color()
-					.setGreen((float)1.0);
+					.setGreen(1.0F);
 			
 			/* Build InterpolationPoint(s)*/
 			
@@ -545,73 +520,6 @@ public class TeamAPI {
 		/*----------------------------------Runtime----------------------------*/
 		long runtime = System.currentTimeMillis() - startTime;
 		System.out.printf("(%d ms)\n", runtime);
-	}
-	
-	/*
-	------------------------------------------------------------------------------------------
-	//																						//
-	//									  DRIVE METHODS										//
-	//																						//
-	------------------------------------------------------------------------------------------
-	*/
-	
-	/**
-	 * Sets the permission ID for the current email on the Drive object
-	 * 
-	 * @param driveService the authenticated Drive object
-	 * @throws IOException for when an I/O error occurs
-	 */
-	private String setPermissionId(Drive driveService) throws IOException {
-		//Return get the permission ID using Drive.about.get
-		return new JSONObject(driveService.about().get().setFields("user/permissionId").execute())
-				.getJSONObject("user")
-				.getString("permissionId");
-	}
-	
-	/**
-	 * Transfers the ownership of the Google Sheet to usrEmail, which is specified
-	 * in the constructor of {@link TeamAPI}
-	 * 
-	 * @param driveService an authenticated Drive object
-	 * @throws IOException for when an I/O error occurs
-	 */
-	private void transferOwnership(Drive driveService, String usrEmail) throws IOException {
-		//Print message
-		System.out.printf("Transferring ownership to %s...", usrEmail);
-		//Time how long it takes
-		long curTime = System.currentTimeMillis();
-		//Use try-catch to catch if the program cannot transfer ownership
-		try {
-			//Build request body
-			Permission body = new Permission()
-					.setRole("owner")
-					.setType("user")
-					.setEmailAddress(usrEmail);
-			//Execute Drive request to transfer ownership
-			driveService.permissions().create(this.spreadsheetId, body)
-					.setFileId(this.spreadsheetId)
-					.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
-					.setSendNotificationEmail(true)
-					.setSupportsTeamDrives(false)
-					.setTransferOwnership(true)
-					.setUseDomainAdminAccess(false)
-					.execute();
-			//Execute drive request to remove current email from sheet
-			String permissionId = setPermissionId(driveService);
-			driveService.permissions().delete(this.spreadsheetId,  permissionId)
-					.setFileId(this.spreadsheetId)
-					.setPermissionId(permissionId)
-					.setSupportsTeamDrives(false)
-					.setUseDomainAdminAccess(false)
-					.execute();
-			//Time taken
-			long timeTaken = System.currentTimeMillis() - curTime;
-			//Print message
-			System.out.printf("(%d ms)%n", timeTaken);
-		}catch(com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
-			System.err.println("\nTRANSFER REQUEST ERROR");
-			System.err.println(e.getMessage() + "\n");
-		}
 	}
 	
 	/*
