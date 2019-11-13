@@ -102,7 +102,6 @@ public class TeamAPI {
 		processLink(link, "");
 		//Assign credentials
 		Credential credential_sheets = setCredential();
-		Credential credential_drive = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
 		//Create spreadsheet
@@ -265,7 +264,7 @@ public class TeamAPI {
 		//Put default column #1 values
 		putNames(names);
 		//Build list
-		List<List<Object>> topValues = Arrays.asList(Arrays.asList(names));
+		List<List<Object>> topValues = Arrays.asList(Arrays.asList((Object[])names));
 		//Configure body for request as ValueRange
 		ValueRange topBody = new ValueRange().setValues(topValues);
 		//Build request and execute
@@ -298,7 +297,7 @@ public class TeamAPI {
 			//Build array with proper data
 			buildValues(valuesArr, t);
 			//Add to list
-			values.add(Arrays.asList(valuesArr));
+			values.add(Arrays.asList((Object[])valuesArr));
 			//Time taken
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print-out
