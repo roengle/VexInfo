@@ -99,9 +99,6 @@ public class TeamAPI {
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, "");
-		//Assign access tokens
-		String accessToken_sheets = setAccessToken();
-		String accessToken_drive = setAccessToken();
 		//Assign credentials
 		Credential credential_sheets = setCredential();
 		Credential credential_drive = setCredential();
@@ -139,13 +136,8 @@ public class TeamAPI {
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, season);
-		//Print out estimated runtime
-		
-		//Assign access tokens
-		String accessToken = setAccessToken();
 		//Assign credentials
 		Credential credential_sheets = setCredential();
-		Credential credential_drive = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
 		//Create spreadsheet
@@ -218,30 +210,6 @@ public class TeamAPI {
 	    System.out.printf("(%d ms)%n", timeDif);
 	    //Return new Sheets object
 	    return sheets;
-	}
-
-	/**
-	 * Retrieves an access token using the refresh token for the Sheets API
-	 * 
-	 * @throws IOException for when an I/O error occurs
-	 * @throws GeneralSecurityException 
-	 */
-	public String setAccessToken() throws IOException, GeneralSecurityException{
-		/*
-		 * Note to users who plan to use this:
-		 * 
-		 * On Github, the Constants.java file will not show since I put it in 
-		 * gitignore. In order to use this on your own, make a new file 
-		 * Constants.java as an interface, and simply input
-		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET", as well as 
-		 * "GOOGLE_REFRESH_TOKEN".
-		 */
-		//Create a token response using refresh token and oauth credentials
-		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.GOOGLE_REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
-				.execute();
-		//Set the access token
-		return token_response.getAccessToken();   
 	}
 	
 	/*
@@ -455,7 +423,7 @@ public class TeamAPI {
 			
 			/* Build InterpolationPoint(s)*/
 			
-			//Create and build InterpolationPoint for minpoint(if i equals 6, reverse from min to max, since lower is beeter for dpr)
+			//Create and build InterpolationPoint for minpoint(reverse from max to min, since lower is better for dpr and vrating rank)
 			InterpolationPoint min = (i != 6 && i != 11) ? 
 				new InterpolationPoint()
 					.setColor(minColor)
@@ -469,7 +437,7 @@ public class TeamAPI {
 				.setColor(midColor)
 				.setType("PERCENT")
 				.setValue("50");		
-			//Create and build InterpolationPoint for maxpoint(if i equals 6, reverse from max to min, since lower is better for dpr)
+			//Create and build InterpolationPoint for maxpoint(reverse from max to min, since lower is better for dpr and vrating rank)
 			InterpolationPoint max = (i != 6 && i != 11) ? 
 					new InterpolationPoint()
 						.setColor(maxColor)
@@ -760,8 +728,8 @@ public class TeamAPI {
 		arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : ntFnd;
 		//17.
 		arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : ntFnd;
-		//18.
-		arr[18] = Integer.toString(t.getNumEvents());
+		//18. Subtract one since getNumEvents() includes the current event
+		arr[18] = Integer.toString((t.getNumEvents() - 1));
 	}
 	
 	/**
@@ -789,7 +757,7 @@ public class TeamAPI {
 		a[15] = "Average Skills Score(Robot)";
 		a[16] = "Average Skills Score(Combined)";
 		a[17] = "Average Max Score";
-		a[18] = String.format("Total Events:(%s)", this.season);
+		a[18] = String.format("Previous Events (%s)", this.season);
 	}
 	/*
 	------------------------------------------------------------------------------------------
