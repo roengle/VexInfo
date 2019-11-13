@@ -164,7 +164,7 @@ public class TeamAPI {
 	 */
 	private Credential setCredential() throws GeneralSecurityException, IOException {
 	    //Print message
-		System.out.print("Building API Credential...");
+		System.out.print("Building API Credential...\n");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
 		//Get a credential object using credentials
