@@ -95,7 +95,7 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
@@ -131,7 +131,7 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail, String season) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
