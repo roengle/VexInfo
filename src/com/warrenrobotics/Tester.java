@@ -5,7 +5,7 @@ public class Tester {
 		//Time runtime of whole program
 		long curTime = System.currentTimeMillis();
 		//Set event link(s)
-		String eventLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5915.html"; //Random for test
+		String eventLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-8157.html"; //Random for test
 		//Essentially grab all data and set it(constructor body calls create and write methods)
 		@SuppressWarnings("unused")
 		//If args isn't empty, use those. Otherwise, default values
