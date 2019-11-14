@@ -5,13 +5,11 @@ public class Tester {
 		//Time runtime of whole program
 		long curTime = System.currentTimeMillis();
 		//Set event link(s)
-		String eventLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-18-5915.html"; //Random for test
-		//Set email for user to transfer ownership to
-		String usrEmail = "iragequitwup123zz@gmail.com";
+		String eventLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-8157.html"; //Random for test
 		//Essentially grab all data and set it(constructor body calls create and write methods)
 		@SuppressWarnings("unused")
 		//If args isn't empty, use those. Otherwise, default values
-		TeamAPI api = args.length != 0 ? new TeamAPI(args[0], args[1]) : new TeamAPI(eventLink, usrEmail);
+		TeamAPI api = args.length != 0 ? new TeamAPI(args[0]) : new TeamAPI(eventLink);
 		//Time taken
 		long timeTaken = System.currentTimeMillis() - curTime; 
 		//Print out message

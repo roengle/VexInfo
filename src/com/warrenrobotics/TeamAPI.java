@@ -95,7 +95,7 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
@@ -131,7 +131,7 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail, String season) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
@@ -301,7 +301,7 @@ public class TeamAPI {
 			//Time taken
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print-out
-			System.out.printf("Team %s inputted in (%d) ms\n", n.toString(), timeTaken);
+			System.out.print(String.format("\t%-10s(%dms)\n", n.toString(), timeTaken).replace(" ", "."));
 		}
 		//Time how long the write request takes
 		long writeTime = System.currentTimeMillis();
@@ -334,9 +334,18 @@ public class TeamAPI {
 	}
 	
 	/**
-	 * Applies conditional formatting to the sheet to highlight the sections with "NOT_FOUND" text.
-	 * For all cells except ones for skills, this color will be red. For skills cells, this will be 
-	 * orange. 
+	 * Applies conditional formatting to the sheet.
+	 * <ul>
+	 * 	The following conditional formatting rules are applied:
+	 * 	<li>
+	 * 		Italicizes the text in cels that show NOT_FOUND
+	 * 	</li>
+	 * 	<li>
+	 * 		Applies a color gradient to numerical data points in the sheet. A greener color represents a 
+	 * 		better value in comparison to the rest, while a more red color represents a worse value in 
+	 * 		comparison to the others.
+	 * 	</li>
+	 * </ul>
 	 * 
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
@@ -534,11 +543,7 @@ public class TeamAPI {
 				.getJSONArray("result")
 				.getJSONObject(0);
 		//Set event season
-		if(season.equals("")) {
-			this.season = eventJson.getString("season");
-		} else {
-			this.season = season;
-		}
+		this.season = season.equals("") ? eventJson.getString("season") : season ;
 		//Set event name
 		this.eventName = eventJson.getString("name");
 		//Print event name
@@ -552,7 +557,7 @@ public class TeamAPI {
 		//Print out address
 		System.out.printf("Address: %s\n", eventJson.getString("loc_address1"));
 		//Print out city/state
-		System.out.printf("\t%s, %s %s\n", eventJson.getString("loc_city"), eventJson.getString("loc_region"),
+		System.out.printf("\t %s, %s %s\n", eventJson.getString("loc_city"), eventJson.getString("loc_region"),
 				eventJson.getString("loc_postcode"));
 		//Print out county
 		System.out.printf("Country: %s\n", eventJson.getString("loc_country"));
@@ -574,8 +579,9 @@ public class TeamAPI {
 		//Set team list
 		this.teamList = teams;
 		//Print out estimated runtime
+		//TODO: Fix me. Although the time spend logging in does add to this
 		double estimatedRuntime = (2.0 + (0.3 * teamList.length) + 0.6 + 9.0 + 3.0);
-		System.out.printf("Estimated Runtime - (%.2f) seconds\n", estimatedRuntime);
+		System.out.printf("Estimated Runtime(Broken) - (%.2f) seconds\n", estimatedRuntime);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
