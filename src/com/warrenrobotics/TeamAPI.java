@@ -226,7 +226,7 @@ public class TeamAPI {
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
-	public void executeCreateRequest(Sheets sheetsService) throws IOException {
+	private void executeCreateRequest(Sheets sheetsService) throws IOException {
 		System.out.printf("Creating Google Sheet...");
 		//Time how long algorithm takes
 		long curTime = System.currentTimeMillis();
@@ -256,7 +256,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws InterruptedException for when a thread is being occupied and interrupted
 	 */
-	public void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
+	private void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
 		//Debugging for how long algorithm takes to run with certain data sets
 		long startTime = System.currentTimeMillis();
 		//Build column #1 of the spreadsheet
@@ -350,7 +350,7 @@ public class TeamAPI {
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
-	public void applyConditionalFormatting(Sheets sheetsService) throws IOException {
+	private void applyConditionalFormatting(Sheets sheetsService) throws IOException {
 		//Get start time to time how long it takes
 		long startTime = System.currentTimeMillis();
 		//Verbose message
@@ -598,7 +598,7 @@ public class TeamAPI {
 	 * the program will continue.
 	 * </p>
 	 */
-	public void checkDate(){
+	private void checkDate(){
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 		//New Calendar instance
