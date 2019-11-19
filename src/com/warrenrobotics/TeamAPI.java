@@ -37,16 +37,20 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 
 import com.google.api.services.sheets.v4.model.AddConditionalFormatRuleRequest;
+import com.google.api.services.sheets.v4.model.AutoResizeDimensionsRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BooleanCondition;
 import com.google.api.services.sheets.v4.model.BooleanRule;
+import com.google.api.services.sheets.v4.model.CellData;
 import com.google.api.services.sheets.v4.model.CellFormat;
 import com.google.api.services.sheets.v4.model.Color;
 import com.google.api.services.sheets.v4.model.ConditionValue;
 import com.google.api.services.sheets.v4.model.ConditionalFormatRule;
+import com.google.api.services.sheets.v4.model.DimensionRange;
 import com.google.api.services.sheets.v4.model.GradientRule;
 import com.google.api.services.sheets.v4.model.GridRange;
 import com.google.api.services.sheets.v4.model.InterpolationPoint;
+import com.google.api.services.sheets.v4.model.RepeatCellRequest;
 import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
@@ -108,6 +112,8 @@ public class TeamAPI {
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply text-centering and dimension resizing
+		applyDimensionAutoResize(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
 	}
@@ -144,6 +150,8 @@ public class TeamAPI {
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply text-centering and dimension resizing
+		applyDimensionAutoResize(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
 	}
@@ -338,7 +346,7 @@ public class TeamAPI {
 	 * <ul>
 	 * 	The following conditional formatting rules are applied:
 	 * 	<li>
-	 * 		Italicizes the text in cels that show NOT_FOUND
+	 * 		Italicizes the text in cells that show NOT_FOUND
 	 * 	</li>
 	 * 	<li>
 	 * 		Applies a color gradient to numerical data points in the sheet. A greener color represents a 
@@ -499,6 +507,70 @@ public class TeamAPI {
 		System.out.printf("(%d ms)\n", runtime);
 	}
 	
+	/**
+	 * Applies automatic dimension resizing for the sheet. This allows for the data to not be "squished" together.
+	 * The text is automatically centered, as the automatic dimension resizing requires this for proper column dimension.
+	 * 
+	 * @param sheetsService the Sheets object with an authenticated credential
+	 * @throws IOException for when an I/O error occurs
+	 */
+	private void applyDimensionAutoResize(Sheets sheetsService) throws IOException {
+		//Get start time to time how long it takes
+		long startTime = System.currentTimeMillis();
+		//Verbose message
+		System.out.print("Applying dimension resizing...");
+		
+		/*-----------------------Build repeatCellRequest-----------------------*/
+		//Build GridRange for repeatCellRequest. This handles the range which the request will act on
+		GridRange repeatCellRange = new GridRange();
+		repeatCellRange.setSheetId(0);
+		repeatCellRange.setStartColumnIndex(0);
+		repeatCellRange.setEndColumnIndex(20);
+		repeatCellRange.setStartRowIndex(0);
+		
+		//Build CellFormat for userEnteredFormat
+		CellFormat userEnteredCellFormat = new CellFormat();
+		userEnteredCellFormat.setHorizontalAlignment("CENTER");
+		userEnteredCellFormat.setVerticalAlignment("MIDDLE");
+		//Build CellData. This handles what will happen to the cells in the range
+		CellData repeatCellData = new CellData();
+		repeatCellData.setUserEnteredFormat(userEnteredCellFormat);
+		
+		//Build fields
+		String fields = "userEnteredFormat(horizontalAlignment,verticalAlignment)";
+		
+		//Build repeatCellRequest using the range, cell format, and fields
+		RepeatCellRequest repeatCellRequest = new RepeatCellRequest();
+		repeatCellRequest.setRange(repeatCellRange);
+		repeatCellRequest.setCell(repeatCellData);
+		repeatCellRequest.setFields(fields);
+		/*-------------------Build autoResizeDimensionsRequest-----------------*/
+		//Build DimensionRange for autoResizeDimensionRequest. This handles where the request will act on
+		DimensionRange dimensionRange = new DimensionRange();
+		dimensionRange.setDimension("COLUMNS");
+		dimensionRange.setStartIndex(0);
+		dimensionRange.setEndIndex(20);
+		dimensionRange.setSheetId(0);
+		
+		AutoResizeDimensionsRequest autoResizeDimensionsRequest = new AutoResizeDimensionsRequest();
+		autoResizeDimensionsRequest.setDimensions(dimensionRange);
+		/*----------------------------Build requests---------------------------*/
+		//Make a list of requests and add our previous requests to it
+		List<Request> requests = new ArrayList<>();
+		requests.add(new Request().setRepeatCell(repeatCellRequest));
+		requests.add(new Request().setAutoResizeDimensions(autoResizeDimensionsRequest));
+		/*--------------------Build BatchUpdateSpreadsheetRequest--------------*/
+		BatchUpdateSpreadsheetRequest mainRequestBody = new BatchUpdateSpreadsheetRequest();
+		mainRequestBody.setRequests(requests);
+		/*-----------------------------Execute Request-------------------------*/
+		sheetsService.spreadsheets()
+					.batchUpdate(this.spreadsheetId, mainRequestBody)
+					.execute();
+		/*---------------------------------Runtime-----------------------------*/
+		long runtime = System.currentTimeMillis() - startTime;
+		System.out.printf("(%d ms)\n", runtime);
+	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -637,7 +709,7 @@ public class TeamAPI {
 			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
 			//Create a DateFormat object to get desired format for date
-			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+			DateFormat df = DateFormat.getDateInstance(DateFormat.LONG);
 			//Print out dates
 			System.out.printf("Today:%s\n", df.format(today));
 			System.out.printf("Actual:%s\n", df.format(eventDateActual));
@@ -763,7 +835,7 @@ public class TeamAPI {
 		a[15] = "Average Skills Score(Robot)";
 		a[16] = "Average Skills Score(Combined)";
 		a[17] = "Average Max Score";
-		a[18] = String.format("Previous Events (%s)", this.season);
+		a[18] = "Previous Events";
 	}
 	/*
 	------------------------------------------------------------------------------------------
