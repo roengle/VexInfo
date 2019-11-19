@@ -34,7 +34,9 @@ The following is a list of the data that is included in each Google Sheet:
 * Average DPR: The Defensive Power Ranking (DPR) is a value that represents how defensive a team is. A lower value represents a stronger team. The average 	DPR is the average of a team's DPR from all of the tournaments they competed at.
 * Average CCWM: The Calculated Contribution to Winning Margin (CCWM) is a value computed using both OPR and DPR to represent how a team has contributed to an 	alliance's winning point margin. A higher value represents a stronger team. A team with negative CCWM should generally never be chosen. The average CCWM 	is the average of a team's CCWM from all of the tournaments they competed at. 
 * Average AP's: Autonomous Points (AP's) are the number of autonomous points that a team has earned through winning autonomous rounds. The amount of 	autonomous points rewarded for an autonomous round win depend on the season. The average AP is the average of a team's AP's from all the tournaments they 	competed at.
-* Average SP's: Strength of Schedule Points (SP's) are the amount of points 
+* Average SP's: Strength of Schedule Points (SP's) are awarded in the amount of the score of the losing alliance.
+* Average TRSP's: Truly Representative Schedule Points (TRSP's) is a custom SP value that cannot be farmed and is only effected by difficulty of schedule.
+	See [this](vexforum.com/t/sp-ranking-system-ideas/22614) forum post for more information.
 * Vrating: vRating is a custom ranking method developed by Team BNS which takes into account a wide variety of different metrics to guage a team's 	performance. A higher value represents a stronger team.
 * Vrating Rank: The vRating ranking of the team for the given program and season, compared to other teams. A lower value (higher ranking) represents a 	stronger team.
 * Average Rank: The rank of a team is it's rank at a specific tournament. The average rank is the average of a team's ranks from all the tournaments they 	competed at.

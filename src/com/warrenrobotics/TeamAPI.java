@@ -827,7 +827,7 @@ public class TeamAPI {
 		a[7] = "Average CCWM";
 		a[8] = "Average AP's";
 		a[9] = "Average SP's";
-		a[10] = "Average TSRP's";
+		a[10] = "Average TRSP's";
 		a[11] = "Vrating Rank";
 		a[12] = "Vrating";
 		a[13] = "Average Rank";
