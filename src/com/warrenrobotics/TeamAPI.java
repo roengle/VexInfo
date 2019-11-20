@@ -1,6 +1,8 @@
 package com.warrenrobotics;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.text.DateFormat;
@@ -15,29 +17,40 @@ import org.json.JSONObject;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import com.google.api.client.auth.oauth2.TokenResponse;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
+import com.google.api.client.auth.oauth2.Credential;
+
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+
 import com.google.api.client.http.HttpTransport;
+
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.model.Permission;
+import com.google.api.client.util.store.MemoryDataStoreFactory;
 
 import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.SheetsScopes;
+
 import com.google.api.services.sheets.v4.model.AddConditionalFormatRuleRequest;
+import com.google.api.services.sheets.v4.model.AutoResizeDimensionsRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BooleanCondition;
 import com.google.api.services.sheets.v4.model.BooleanRule;
+import com.google.api.services.sheets.v4.model.CellData;
 import com.google.api.services.sheets.v4.model.CellFormat;
 import com.google.api.services.sheets.v4.model.Color;
 import com.google.api.services.sheets.v4.model.ConditionValue;
 import com.google.api.services.sheets.v4.model.ConditionalFormatRule;
+import com.google.api.services.sheets.v4.model.DimensionRange;
 import com.google.api.services.sheets.v4.model.GradientRule;
 import com.google.api.services.sheets.v4.model.GridRange;
 import com.google.api.services.sheets.v4.model.InterpolationPoint;
+import com.google.api.services.sheets.v4.model.RepeatCellRequest;
 import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties;
@@ -86,29 +99,23 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, "");
-		//Assign access tokens
-		String accessToken_sheets = setAccessToken();
-		String accessToken_drive = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential(accessToken_sheets);
-		GoogleCredential credential_drive = setCredential(accessToken_drive);
+		Credential credential_sheets = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
-		//Create drive service with authenticated credential
-		Drive driveService = createDriveService(credential_drive);
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply text-centering and dimension resizing
+		applyDimensionAutoResize(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
-		//Transfer ownership
-		transferOwnership(driveService, usrEmail);
 	}
 	
 	/**
@@ -130,30 +137,23 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws InterruptedException for when a working thread is interrupted
 	 */
-	public TeamAPI(String link, String usrEmail, String season) throws IOException, GeneralSecurityException, InterruptedException{
+	public TeamAPI(String link, String season) throws IOException, GeneralSecurityException, InterruptedException{
 		//Print date of start time
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 		//Process link into SKU, grab season, set event name, and set team list
 		processLink(link, season);
-		//Print out estimated runtime
-		
-		//Assign access tokens
-		String accessToken = setAccessToken();
 		//Assign credentials
-		GoogleCredential credential_sheets = setCredential(accessToken);
-		GoogleCredential credential_drive = setCredential(accessToken);
+		Credential credential_sheets = setCredential();
 		//Create sheet service with authenticated credential
 		Sheets sheetsService = createSheetsService(credential_sheets);
-		//Create drive service with authenticated credential
-		Drive driveService = createDriveService(credential_drive);
 		//Create spreadsheet
 		executeCreateRequest(sheetsService);
 		//Execute a write request
 		executeWriteRequest(sheetsService);
+		//Apply text-centering and dimension resizing
+		applyDimensionAutoResize(sheetsService);
 		//Apply conditional formatting
 		applyConditionalFormatting(sheetsService);
-		//Transfer ownership
-		transferOwnership(driveService, usrEmail);
 	}
 	
 	/*
@@ -170,25 +170,28 @@ public class TeamAPI {
 	 * @throws GeneralSecurityException
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private GoogleCredential setCredential(String accessToken) throws GeneralSecurityException, IOException {
-		//Create new transport
-		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+	private Credential setCredential() throws GeneralSecurityException, IOException {
 	    //Print message
-		System.out.print("Building API Credential...");
+		System.out.print("Building API Credential...\n");
 		//Time how long it takes
 		long curTime = System.currentTimeMillis();
-		//Build authenticated credential
-		GoogleCredential newCredential = new GoogleCredential.Builder()
-				.setTransport(httpTransport)
-				.setClientSecrets(Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
-				.build()
-				.setAccessToken(accessToken);
+		//Get a credential object using credentials
+		InputStream in = TeamAPI.class.getResourceAsStream("credentials.json");
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JacksonFactory.getDefaultInstance(), new InputStreamReader(in));
+
+        List<String> scopes = Arrays.asList(SheetsScopes.SPREADSHEETS);
+
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
+        		.Builder(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), clientSecrets, scopes)
+        		.setDataStoreFactory(new MemoryDataStoreFactory())
+                .setAccessType("offline").build();
+        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
+
 		//Get time difference
 		int timeDif = (int)(System.currentTimeMillis() - curTime);
 		//Print out time taken
 		System.out.printf("(%d ms)%n", timeDif);
-		//Return new credential
-		return newCredential;
+		return credential;
 	}
 	
 	/**
@@ -198,7 +201,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws GeneralSecurityException
 	 */
-	private Sheets createSheetsService(GoogleCredential cred) throws IOException, GeneralSecurityException {
+	private Sheets createSheetsService(Credential cred) throws IOException, GeneralSecurityException {
 		//Create new transport
 		HttpTransport httpTransportSheets = GoogleNetHttpTransport.newTrustedTransport();
 		//Print message
@@ -217,58 +220,6 @@ public class TeamAPI {
 	    return sheets;
 	}
 	
-	/**
-	 * Creates a Drive object that can be used to make a request for data
-	 * 
-	 * @return a Drive object that can be used to edit permissions
-	 * @throws IOException for when an I/O error occurs
-	 * @throws GeneralSecurityException
-	 */
-	private Drive createDriveService(GoogleCredential cred) throws IOException, GeneralSecurityException{
-		//Create new transport
-		HttpTransport httpTransportDrive = GoogleNetHttpTransport.newTrustedTransport();
-		//Print message
-		System.out.print("Building Drive Service...");
-		//Time how long it takes
-		long curTime = System.currentTimeMillis();
-		//Build drive object and return it
-		Drive drive = new Drive.Builder(httpTransportDrive, jsonFactory, cred)
-				.setApplicationName("VexInfo.io - Drive Usage")
-				.build();
-		//Get time difference
-	    int timeDif = (int)(System.currentTimeMillis() - curTime);
-	    //Print out time taken
-	    System.out.printf("(%d ms)%n", timeDif);
-	    //Print out break
-	    System.out.println("-----------------------------------------------------------");
-	    //Return new Drive object 
-	    return drive;
-	}
-
-	/**
-	 * Retrieves an access token using the refresh token for the Sheets API
-	 * 
-	 * @throws IOException for when an I/O error occurs
-	 * @throws GeneralSecurityException 
-	 */
-	public String setAccessToken() throws IOException, GeneralSecurityException{
-		/*
-		 * Note to users who plan to use this:
-		 * 
-		 * On Github, the Constants.java file will not show since I put it in 
-		 * gitignore. In order to use this on your own, make a new file 
-		 * Constants.java as an interface, and simply input
-		 * the values "GOOGLE_CLIENT_ID" and "GOOGLE_CLIENT_SECRET", as well as 
-		 * "GOOGLE_REFRESH_TOKEN".
-		 */
-		//Create a token response using refresh token and oauth credentials
-		TokenResponse token_response = new GoogleRefreshTokenRequest(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), 
-				Constants.GOOGLE_REFRESH_TOKEN, Constants.GOOGLE_CLIENT_ID, Constants.GOOGLE_CLIENT_SECRET)
-				.execute();
-		//Set the access token
-		return token_response.getAccessToken();   
-	}
-	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -283,7 +234,7 @@ public class TeamAPI {
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
-	public void executeCreateRequest(Sheets sheetsService) throws IOException {
+	private void executeCreateRequest(Sheets sheetsService) throws IOException {
 		System.out.printf("Creating Google Sheet...");
 		//Time how long algorithm takes
 		long curTime = System.currentTimeMillis();
@@ -313,7 +264,7 @@ public class TeamAPI {
 	 * @throws IOException for when an I/O error occurs
 	 * @throws InterruptedException for when a thread is being occupied and interrupted
 	 */
-	public void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
+	private void executeWriteRequest(Sheets sheetsService) throws IOException, InterruptedException{
 		//Debugging for how long algorithm takes to run with certain data sets
 		long startTime = System.currentTimeMillis();
 		//Build column #1 of the spreadsheet
@@ -321,7 +272,7 @@ public class TeamAPI {
 		//Put default column #1 values
 		putNames(names);
 		//Build list
-		List<List<Object>> topValues = Arrays.asList(Arrays.asList(names));
+		List<List<Object>> topValues = Arrays.asList(Arrays.asList((Object[])names));
 		//Configure body for request as ValueRange
 		ValueRange topBody = new ValueRange().setValues(topValues);
 		//Build request and execute
@@ -354,11 +305,11 @@ public class TeamAPI {
 			//Build array with proper data
 			buildValues(valuesArr, t);
 			//Add to list
-			values.add(Arrays.asList(valuesArr));
+			values.add(Arrays.asList((Object[])valuesArr));
 			//Time taken
 			long timeTaken = System.currentTimeMillis() - sTime;
 			//Print-out
-			System.out.printf("Team %s inputted in (%d) ms\n", n.toString(), timeTaken);
+			System.out.print(String.format("\t%-10s(%dms)\n", n.toString(), timeTaken).replace(" ", "."));
 		}
 		//Time how long the write request takes
 		long writeTime = System.currentTimeMillis();
@@ -391,14 +342,23 @@ public class TeamAPI {
 	}
 	
 	/**
-	 * Applies conditional formatting to the sheet to highlight the sections with "NOT_FOUND" text.
-	 * For all cells except ones for skills, this color will be red. For skills cells, this will be 
-	 * orange. 
+	 * Applies conditional formatting to the sheet.
+	 * <ul>
+	 * 	The following conditional formatting rules are applied:
+	 * 	<li>
+	 * 		Italicizes the text in cells that show NOT_FOUND
+	 * 	</li>
+	 * 	<li>
+	 * 		Applies a color gradient to numerical data points in the sheet. A greener color represents a 
+	 * 		better value in comparison to the rest, while a more red color represents a worse value in 
+	 * 		comparison to the others.
+	 * 	</li>
+	 * </ul>
 	 * 
 	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
-	public void applyConditionalFormatting(Sheets sheetsService) throws IOException {
+	private void applyConditionalFormatting(Sheets sheetsService) throws IOException {
 		//Get start time to time how long it takes
 		long startTime = System.currentTimeMillis();
 		//Verbose message
@@ -468,19 +428,19 @@ public class TeamAPI {
 			
 			//Create color for minpoint
 			Color minColor = new Color()
-					.setRed((float)0.796875);
+					.setRed(0.796875F);
 			//Create color for midpoint
 			Color midColor = new Color()
-					.setRed((float)0.94140625)
-					.setGreen((float)0.7578125)
-					.setBlue((float)0.1953125);
+					.setRed(0.94140625F)
+					.setGreen(0.7578125F)
+					.setBlue(0.1953125F);
 			//Create color for maxpoint
 			Color maxColor = new Color()
-					.setGreen((float)1.0);
+					.setGreen(1.0F);
 			
 			/* Build InterpolationPoint(s)*/
 			
-			//Create and build InterpolationPoint for minpoint(if i equals 6, reverse from min to max, since lower is beeter for dpr)
+			//Create and build InterpolationPoint for minpoint(reverse from max to min, since lower is better for dpr and vrating rank)
 			InterpolationPoint min = (i != 6 && i != 11) ? 
 				new InterpolationPoint()
 					.setColor(minColor)
@@ -494,7 +454,7 @@ public class TeamAPI {
 				.setColor(midColor)
 				.setType("PERCENT")
 				.setValue("50");		
-			//Create and build InterpolationPoint for maxpoint(if i equals 6, reverse from max to min, since lower is better for dpr)
+			//Create and build InterpolationPoint for maxpoint(reverse from max to min, since lower is better for dpr and vrating rank)
 			InterpolationPoint max = (i != 6 && i != 11) ? 
 					new InterpolationPoint()
 						.setColor(maxColor)
@@ -547,71 +507,68 @@ public class TeamAPI {
 		System.out.printf("(%d ms)\n", runtime);
 	}
 	
-	/*
-	------------------------------------------------------------------------------------------
-	//																						//
-	//									  DRIVE METHODS										//
-	//																						//
-	------------------------------------------------------------------------------------------
-	*/
-	
 	/**
-	 * Sets the permission ID for the current email on the Drive object
+	 * Applies automatic dimension resizing for the sheet. This allows for the data to not be "squished" together.
+	 * The text is automatically centered, as the automatic dimension resizing requires this for proper column dimension.
 	 * 
-	 * @param driveService the authenticated Drive object
+	 * @param sheetsService the Sheets object with an authenticated credential
 	 * @throws IOException for when an I/O error occurs
 	 */
-	private String setPermissionId(Drive driveService) throws IOException {
-		//Return get the permission ID using Drive.about.get
-		return new JSONObject(driveService.about().get().setFields("user/permissionId").execute())
-				.getJSONObject("user")
-				.getString("permissionId");
-	}
-	
-	/**
-	 * Transfers the ownership of the Google Sheet to usrEmail, which is specified
-	 * in the constructor of {@link TeamAPI}
-	 * 
-	 * @param driveService an authenticated Drive object
-	 * @throws IOException for when an I/O error occurs
-	 */
-	private void transferOwnership(Drive driveService, String usrEmail) throws IOException {
-		//Print message
-		System.out.printf("Transferring ownership to %s...", usrEmail);
-		//Time how long it takes
-		long curTime = System.currentTimeMillis();
-		//Use try-catch to catch if the program cannot transfer ownership
-		try {
-			//Build request body
-			Permission body = new Permission()
-					.setRole("owner")
-					.setType("user")
-					.setEmailAddress(usrEmail);
-			//Execute Drive request to transfer ownership
-			driveService.permissions().create(this.spreadsheetId, body)
-					.setFileId(this.spreadsheetId)
-					.setEmailMessage(String.format("VexInfo.io - %s%n%n%s", this.eventName, this.spreadsheetURL))
-					.setSendNotificationEmail(true)
-					.setSupportsTeamDrives(false)
-					.setTransferOwnership(true)
-					.setUseDomainAdminAccess(false)
+	private void applyDimensionAutoResize(Sheets sheetsService) throws IOException {
+		//Get start time to time how long it takes
+		long startTime = System.currentTimeMillis();
+		//Verbose message
+		System.out.print("Applying dimension resizing...");
+		
+		/*-----------------------Build repeatCellRequest-----------------------*/
+		//Build GridRange for repeatCellRequest. This handles the range which the request will act on
+		GridRange repeatCellRange = new GridRange();
+		repeatCellRange.setSheetId(0);
+		repeatCellRange.setStartColumnIndex(0);
+		repeatCellRange.setEndColumnIndex(20);
+		repeatCellRange.setStartRowIndex(0);
+		
+		//Build CellFormat for userEnteredFormat
+		CellFormat userEnteredCellFormat = new CellFormat();
+		userEnteredCellFormat.setHorizontalAlignment("CENTER");
+		userEnteredCellFormat.setVerticalAlignment("MIDDLE");
+		//Build CellData. This handles what will happen to the cells in the range
+		CellData repeatCellData = new CellData();
+		repeatCellData.setUserEnteredFormat(userEnteredCellFormat);
+		
+		//Build fields
+		String fields = "userEnteredFormat(horizontalAlignment,verticalAlignment)";
+		
+		//Build repeatCellRequest using the range, cell format, and fields
+		RepeatCellRequest repeatCellRequest = new RepeatCellRequest();
+		repeatCellRequest.setRange(repeatCellRange);
+		repeatCellRequest.setCell(repeatCellData);
+		repeatCellRequest.setFields(fields);
+		/*-------------------Build autoResizeDimensionsRequest-----------------*/
+		//Build DimensionRange for autoResizeDimensionRequest. This handles where the request will act on
+		DimensionRange dimensionRange = new DimensionRange();
+		dimensionRange.setDimension("COLUMNS");
+		dimensionRange.setStartIndex(0);
+		dimensionRange.setEndIndex(20);
+		dimensionRange.setSheetId(0);
+		
+		AutoResizeDimensionsRequest autoResizeDimensionsRequest = new AutoResizeDimensionsRequest();
+		autoResizeDimensionsRequest.setDimensions(dimensionRange);
+		/*----------------------------Build requests---------------------------*/
+		//Make a list of requests and add our previous requests to it
+		List<Request> requests = new ArrayList<>();
+		requests.add(new Request().setRepeatCell(repeatCellRequest));
+		requests.add(new Request().setAutoResizeDimensions(autoResizeDimensionsRequest));
+		/*--------------------Build BatchUpdateSpreadsheetRequest--------------*/
+		BatchUpdateSpreadsheetRequest mainRequestBody = new BatchUpdateSpreadsheetRequest();
+		mainRequestBody.setRequests(requests);
+		/*-----------------------------Execute Request-------------------------*/
+		sheetsService.spreadsheets()
+					.batchUpdate(this.spreadsheetId, mainRequestBody)
 					.execute();
-			//Execute drive request to remove current email from sheet
-			String permissionId = setPermissionId(driveService);
-			driveService.permissions().delete(this.spreadsheetId,  permissionId)
-					.setFileId(this.spreadsheetId)
-					.setPermissionId(permissionId)
-					.setSupportsTeamDrives(false)
-					.setUseDomainAdminAccess(false)
-					.execute();
-			//Time taken
-			long timeTaken = System.currentTimeMillis() - curTime;
-			//Print message
-			System.out.printf("(%d ms)%n", timeTaken);
-		}catch(com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
-			System.err.println("\nTRANSFER REQUEST ERROR");
-			System.err.println(e.getMessage() + "\n");
-		}
+		/*---------------------------------Runtime-----------------------------*/
+		long runtime = System.currentTimeMillis() - startTime;
+		System.out.printf("(%d ms)\n", runtime);
 	}
 	
 	/*
@@ -658,11 +615,7 @@ public class TeamAPI {
 				.getJSONArray("result")
 				.getJSONObject(0);
 		//Set event season
-		if(season.equals("")) {
-			this.season = eventJson.getString("season");
-		} else {
-			this.season = season;
-		}
+		this.season = season.equals("") ? eventJson.getString("season") : season ;
 		//Set event name
 		this.eventName = eventJson.getString("name");
 		//Print event name
@@ -676,7 +629,7 @@ public class TeamAPI {
 		//Print out address
 		System.out.printf("Address: %s\n", eventJson.getString("loc_address1"));
 		//Print out city/state
-		System.out.printf("\t%s, %s %s\n", eventJson.getString("loc_city"), eventJson.getString("loc_region"),
+		System.out.printf("\t %s, %s %s\n", eventJson.getString("loc_city"), eventJson.getString("loc_region"),
 				eventJson.getString("loc_postcode"));
 		//Print out county
 		System.out.printf("Country: %s\n", eventJson.getString("loc_country"));
@@ -698,8 +651,9 @@ public class TeamAPI {
 		//Set team list
 		this.teamList = teams;
 		//Print out estimated runtime
+		//TODO: Fix me. Although the time spend logging in does add to this
 		double estimatedRuntime = (2.0 + (0.3 * teamList.length) + 0.6 + 9.0 + 3.0);
-		System.out.printf("Estimated Runtime - (%.2f) seconds\n", estimatedRuntime);
+		System.out.printf("Estimated Runtime(Broken) - (%.2f) seconds\n", estimatedRuntime);
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 	}
@@ -716,7 +670,7 @@ public class TeamAPI {
 	 * the program will continue.
 	 * </p>
 	 */
-	public void checkDate(){
+	private void checkDate(){
 		//Print break
 		System.out.println("-----------------------------------------------------------");
 		//New Calendar instance
@@ -755,7 +709,7 @@ public class TeamAPI {
 			//Convert milliseconds to days
 			int dayDifference = (int)TimeUnit.MILLISECONDS.toDays(difInMs);
 			//Create a DateFormat object to get desired format for date
-			DateFormat df = DateFormat.getDateInstance(DateFormat.MEDIUM);
+			DateFormat df = DateFormat.getDateInstance(DateFormat.LONG);
 			//Print out dates
 			System.out.printf("Today:%s\n", df.format(today));
 			System.out.printf("Actual:%s\n", df.format(eventDateActual));
@@ -852,8 +806,8 @@ public class TeamAPI {
 		arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : ntFnd;
 		//17.
 		arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : ntFnd;
-		//18.
-		arr[18] = Integer.toString(t.getNumEvents());
+		//18. Subtract one since getNumEvents() includes the current event
+		arr[18] = Integer.toString((t.getNumEvents() - 1));
 	}
 	
 	/**
@@ -873,7 +827,7 @@ public class TeamAPI {
 		a[7] = "Average CCWM";
 		a[8] = "Average AP's";
 		a[9] = "Average SP's";
-		a[10] = "Average TSRP's";
+		a[10] = "Average TRSP's";
 		a[11] = "Vrating Rank";
 		a[12] = "Vrating";
 		a[13] = "Average Rank";
@@ -881,7 +835,7 @@ public class TeamAPI {
 		a[15] = "Average Skills Score(Robot)";
 		a[16] = "Average Skills Score(Combined)";
 		a[17] = "Average Max Score";
-		a[18] = String.format("Total Events:(%s)", this.season);
+		a[18] = "Previous Events";
 	}
 	/*
 	------------------------------------------------------------------------------------------
