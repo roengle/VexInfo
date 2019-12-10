@@ -40,7 +40,7 @@ import java.nio.charset.Charset;
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
  * @author Robert Engle 
- * @version v2.2.0-beta.2
+ * @version v0.3.1-beta.1
  * @since 2018-02-21
  */
 
