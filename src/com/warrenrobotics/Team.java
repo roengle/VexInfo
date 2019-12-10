@@ -40,7 +40,7 @@ import java.nio.charset.Charset;
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
  * @author Robert Engle 
- * @version 1.2
+ * @version v2.2.0-beta.2
  * @since 2018-02-21
  */
 
@@ -55,32 +55,32 @@ public class Team {
 	private JSONArray tData_season_rankings;
 	private JSONArray tData_skills;
 	//Data - Teams
-	public String number; //IE: 90241B
-	public String teamName; //IE: Warren WarBots II
-	public String teamOrg;
-	public String teamLocation;
-	public String teamLink;
+	private String number; //IE: 90241B
+	private String teamName; //IE: Warren WarBots II
+	private String teamOrg;
+	private String teamLocation;
+	private String teamLink;
 	//Data - Rankings
-	public double avgOPR;
-	public double avgDPR;
-	public double avgCCWM;
-	public int avgMaxScore;
-	public int avgRank;
-	public int avgAP;
-	public int avgSP;
-	public int avgTRSP;
+	private double avgOPR;
+	private double avgDPR;
+	private double avgCCWM;
+	private int avgMaxScore;
+	private int avgRank;
+	private int avgAP;
+	private int avgSP;
+	private int avgTRSP;
 	//Data - Events
-	public int numEvents;
+	private int numEvents;
 	//Data - Season Rankings
 	/* Vrating is a custom ranking method developed by Team BNS using a wide variety of different metrics to gauge a team.
 	   A higher vrating represents a better team.
 	*/
-	public int vrating_rank;
-	public double vrating;
+	private int vrating_rank;
+	private double vrating;
 	//Data - Skills
-	public int avgSkillsScore_robot;
-	public int avgSkillsScore_auton;
-	public int avgSkillsScore_combined;
+	private int avgSkillsScore_robot;
+	private int avgSkillsScore_auton;
+	private int avgSkillsScore_combined;
 	//Used for empty-data checking. Uses a static initializer to avoid making new map for every Team instance
 	public static Map<String, Boolean> fieldIndicators = new HashMap<>();
 	static {

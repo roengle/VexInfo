@@ -71,7 +71,7 @@ import com.google.api.services.sheets.v4.model.ValueRange;
  * with the link of the event and the email to share the Sheet with.
  * </p>
  * @author Robert Engle 
- * @version 1.2
+ * @version v2.2.0-beta.2
  * @since 2018-02-21
  *
  */
@@ -816,7 +816,7 @@ public class TeamAPI {
 	 * @param a the array of strings that will be used for the first column
 	 */
 	private void putNames(String[] a) {
-		//Represents column #1 of the spreadsheet
+		//Represents the entries of the first row
 		a[0] = "Team";
 		a[1] = "Team Name";
 		a[2] = "Organization";
@@ -837,6 +837,7 @@ public class TeamAPI {
 		a[17] = "Average Max Score";
 		a[18] = "Previous Events";
 	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
