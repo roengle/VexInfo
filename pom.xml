@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ReadFromVexDB</groupId>
   <artifactId>ReadFromVexDB</artifactId>
-  <version>1.2.0</version>
+  <version>0.3.1-beta.1</version>
   <name>VexInfo.io-Java</name>
   <description>Deals with all API's to build spreadsheets with VEX teams</description>
   <build>

@@ -194,23 +194,17 @@ public class SheetsWriter {
                         .execute();
         int teamCount = event.getTeamList().size();
         //Print initialize message
-        System.out.printf("Preparing (%d) Teams (Season:%s)%n", teamCount, event.getSeason());
+        System.out.printf("Writing (%d) Teams (Season:%s)%n", teamCount, event.getSeason());
         //Start with ArrayList, cast to List later
         List<List<Object>> values = new ArrayList<List<Object>>();
         //Loop through team list
         for(Team t : event.getTeamList()) {
-            //Time how long each loop takes
-            long sTime = System.currentTimeMillis();
             //Initialize array for inputting data
             String[] valuesArr = new String[19];
             //Build array with proper data
             buildValues(valuesArr, t);
             //Add to list
             values.add(Arrays.asList((Object[])valuesArr));
-            //Time taken
-            long timeTaken = System.currentTimeMillis() - sTime;
-            //Print-out
-            System.out.print(String.format("\t%-10s(%dms)\n", t.getTeamName(), timeTaken).replace(" ", "."));
         }
         //Time how long the write request takes
         long writeTime = System.currentTimeMillis();
