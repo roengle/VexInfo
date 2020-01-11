@@ -59,13 +59,13 @@ public class Team {
 	private String teamName; //IE: Warren WarBots II
 	private String teamOrg;
 	private String teamLocation;
-	private String teamLink;
 	//Data - Rankings
 	private double avgOPR;
 	private double avgDPR;
 	private double avgCCWM;
 	private int avgMaxScore;
 	private int avgRank;
+	private int avgWP;
 	private int avgAP;
 	private int avgSP;
 	private int avgTRSP;
@@ -90,6 +90,7 @@ public class Team {
 		fieldIndicators.put("ccwm", true);
 		fieldIndicators.put("max_score", true);
 		fieldIndicators.put("rank", true);
+		fieldIndicators.put("wp", true);
 		fieldIndicators.put("ap", true);
 		fieldIndicators.put("sp", true);
 		fieldIndicators.put("trsp", true);
@@ -136,8 +137,6 @@ public class Team {
 				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country"))
 				:
 				String.format("%s, %s", result.getString("city"), result.getString("country"));	
-		//Format link correctly
-		this.teamLink = String.format("https://vexdb.io/teams/view/%s", this.number);
 	}
 
 	/**
@@ -149,6 +148,7 @@ public class Team {
 		calculateAvgCCWM();
 		calculateAvgMaxScore();
 		calculateRanks();
+		calculateAvgWP();
 		calculateAvgAP();
 		calculateAvgSP();
 		calculateAvgTRSP();
@@ -266,6 +266,33 @@ public class Team {
 			fieldIndicators.put("ccwm", false);
 			//If zero, set to 0
 			this.avgCCWM = 0.0;
+		}
+	}
+	
+	/**
+	 * Calculates the average win points (WP) and sets the classes instance variable to it
+	 */
+	private void calculateAvgWP() {
+		//Initialize total for average
+		double totalWP = 0.0;
+		//Break up array, and search for DPR in each part
+		for(int i = 0; i < tData_rankings.length(); i++) {
+			//Grab value
+			double wp = tData_rankings.getJSONObject(i).getDouble("wp");
+			//Add to total
+			totalWP += wp;
+		}
+		//Avoid ArithmeticException by checking if divisor is 0
+		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("wp", true);
+			//If nonzero, set to appropriate value
+			this.avgWP = (int)(totalWP + 0.0) / tData_rankings.length();
+		}else {
+			//Add indicator
+			fieldIndicators.put("wp", false);
+			//If zero, set to 0
+			this.avgWP = 0;
 		}
 	}
 
@@ -612,13 +639,6 @@ public class Team {
 	public String getTeamLocation() { return this.teamLocation; }
 
 	/**
-	 * Retrieves the current team VexDB link
-	 *
-	 * @return the VexDB.io link for the team
-	 */
-	public String getTeamLink() { return this.teamLink; }
-
-	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
 	 *
 	 * @return the average OPR of the team
@@ -653,6 +673,13 @@ public class Team {
 	 */
 	public int getAvgRank() { return avgRank; }
 
+	/**
+	 * Retrieves average win points for a team
+	 * 
+	 * @return a rounded-down integer of the average autonomous points
+	 */
+	public int getAvgWP() { return this.avgWP; }
+	
 	/**
 	 * Retrieves average autonomous points for a team
 	 *

@@ -328,7 +328,7 @@ public class SheetsWriter {
         //Build ranges(use sheets GridRange, not Java.util)
         com.google.api.services.sheets.v4.model.GridRange ranges1_1 = new com.google.api.services.sheets.v4.model.GridRange();
         ranges1_1.setSheetId(0);
-        ranges1_1.setStartColumnIndex(5);
+        ranges1_1.setStartColumnIndex(4);
         ranges1_1.setEndColumnIndex(18);
         ranges1_1.setStartRowIndex(1);
         List<com.google.api.services.sheets.v4.model.GridRange> ranges1 = new ArrayList<>();
@@ -378,7 +378,11 @@ public class SheetsWriter {
         /**
          * Using a loop like this creates a bunch of conditional formats, but allows each column to have its own gradient.
          */
-        for(int i = 5; i < 18; i++) {
+        //Declare start and end columns
+        int startColumn = 4;
+        int endColumn = 18;
+        //Loop through respective columns
+        for(int i = startColumn; i < endColumn; i++) {
             //Initialize list for ranges
             List<GridRange> gradientRanges = new ArrayList<>();
             //Add respective range
@@ -475,10 +479,10 @@ public class SheetsWriter {
      * 			<li>teamName</li>
      * 			<li>teamOrg</li>
      * 			<li>teamLocation</li>
-     * 			<li>teamLink</li>
      * 			<li>avgOPR</li>
      * 			<li>avgDPR</li>
      * 			<li>avgCCWM</li>
+     * 			<li>avgWP</li>
      * 			<li>avgAP</li>
      * 			<li>avgSP</li>
      * 			<li>avgTSRP</li>
@@ -501,43 +505,26 @@ public class SheetsWriter {
     private void buildValues(String[] arr, Team t) {
         //Make NOT FOUND string
         final String ntFnd = "NOT_FOUND";
-        //0.
+        //Fill the target array with corresponding team information
         arr[0] = t.getNumber();
-        //1.
         arr[1] = t.getTeamName();
-        //2.
         arr[2] = t.getTeamOrg();
-        //3.
         arr[3] = t.getTeamLocation();
-        //4.
-        arr[4] = t.getTeamLink();
-        //5.
-        arr[5] = t.fieldIndicators.get("opr") ? Double.toString(t.getAvgOPR()) : ntFnd;
-        //6.
-        arr[6] = t.fieldIndicators.get("dpr") ? Double.toString(t.getAvgDPR()) : ntFnd;
-        //7.
-        arr[7] = t.fieldIndicators.get("ccwm") ? Double.toString(t.getAvgCCWM()) : ntFnd;
-        //8.
+        arr[4] = t.fieldIndicators.get("opr") ? Double.toString(t.getAvgOPR()) : ntFnd;
+        arr[5] = t.fieldIndicators.get("dpr") ? Double.toString(t.getAvgDPR()) : ntFnd;
+        arr[6] = t.fieldIndicators.get("ccwm") ? Double.toString(t.getAvgCCWM()) : ntFnd;
+        arr[7] = t.fieldIndicators.get("wp") ? Double.toString(t.getAvgWP()) : ntFnd;
         arr[8] = t.fieldIndicators.get("ap") ? Double.toString(t.getAvgAP()) : ntFnd;
-        //9.
         arr[9] = t.fieldIndicators.get("sp") ? Integer.toString(t.getAvgSP()) : ntFnd;
-        //10.
         arr[10] = t.fieldIndicators.get("trsp") ? Integer.toString(t.getAvgTRSP()) : ntFnd;
-        //11.
         arr[11] = t.fieldIndicators.get("vrating_rank") ? Integer.toString(t.getvrating_rank()) : ntFnd;
-        //12.
         arr[12] = t.fieldIndicators.get("vrating") ? Double.toString(t.getvrating()) : ntFnd;
-        //13.
         arr[13] = t.fieldIndicators.get("rank") ? Integer.toString(t.getAvgRank()) : ntFnd;
-        //14.
         arr[14] = t.fieldIndicators.get("skills_auton") ? Integer.toString(t.getAvgSkillsScore_auton()) : ntFnd;
-        //15.
         arr[15] = t.fieldIndicators.get("skills_robot") ? Integer.toString(t.getAvgSkillsScore_robot()) : ntFnd;
-        //16.
         arr[16] = t.fieldIndicators.get("skills_combined") ? Integer.toString(t.getAvgSkillsScore_combined()) : ntFnd;
-        //17.
         arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : ntFnd;
-        //18. Subtract one since getNumEvents() includes the current event
+        //Subtract one since getNumEvents() includes the current event
         arr[18] = Integer.toString((t.getNumEvents() - 1));
     }
 
@@ -552,10 +539,10 @@ public class SheetsWriter {
         a[1] = "Team Name";
         a[2] = "Organization";
         a[3] = "Location";
-        a[4] = "VexDB Link";
-        a[5] = "Average OPR";
-        a[6] = "Average DPR";
-        a[7] = "Average CCWM";
+        a[4] = "Average OPR";
+        a[5] = "Average DPR";
+        a[6] = "Average CCWM";
+        a[7] = "Average WP";
         a[8] = "Average AP's";
         a[9] = "Average SP's";
         a[10] = "Average TRSP's";

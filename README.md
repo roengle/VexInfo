@@ -67,7 +67,7 @@ To run the program, proper OAuth credentials must be placed into the same direct
 
 * **Robert Engle** - *Creator & Lead Developer* - [Wup123102](https://github.com/Wup123102)
 
-* **Ivan Wick** - *Back-End Developer* - [ivanwick](https://github.com/ivanwick)
+* **Ivan Wick** - *Contributor* - [ivanwick](https://github.com/ivanwick)
 
 ## Worlds Events Sheets
 
