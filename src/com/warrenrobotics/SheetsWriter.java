@@ -35,7 +35,7 @@ import java.util.Map;
  * To create a Google Sheet for an event, pass a {@link VexEvent} to
  * {@link #writeVexEvent}.
  * </p>
- * @author Robert Engle, Ivan Wick
+ * @author Robert Engle
  * @version 0.3.1-beta.1
  * @since 2018-02-21
  *

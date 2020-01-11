@@ -12,7 +12,7 @@ import java.util.List;
  * event date, a list of teams, and the RobotEvents SKU, which serves
  * as a unique identifier for APIs.
  * </p>
- * @author Ivan Wick
+ * @author Robert Engle
  * @version 0.3.1-beta.1
  * @since 2018-02-21
  *
