@@ -232,6 +232,7 @@ public class VexLoader {
                     .setEventData()
                     .setRankingData()
                     .setSeasonData()
+                    .setAwardsData()
                     .setSkillsData()
                     .build();
 

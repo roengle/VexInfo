@@ -10,7 +10,7 @@ public class Tester {
 		//Set event link(s)
 		// future event 2020-03-07 to test 4-week lead time
 		// String defaultLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-1124.html";
-		String defaultLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-8971.html"; //Random for test
+		String defaultLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-0201.html"; //Random for test
 		//If args isn't empty, use those. Otherwise, default values
 		String eventLink = args.length != 0 ? args[0] : defaultLink;
 

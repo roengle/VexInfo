@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -178,7 +179,7 @@ public class SheetsWriter {
         //Debugging for how long algorithm takes to run with certain data sets
         long startTime = System.currentTimeMillis();
         //Build column #1 of the spreadsheet
-        String[] names = new String[19];
+        String[] names = new String[20];
         //Put default column #1 values
         putNames(names);
         //Build list
@@ -188,7 +189,7 @@ public class SheetsWriter {
         //Build request and execute
         @SuppressWarnings("unused")
         UpdateValuesResponse topResult =
-                sheetsService.spreadsheets().values().update(spreadsheetId, "Sheet1!A1:S1", topBody)
+                sheetsService.spreadsheets().values().update(spreadsheetId, "Sheet1!A1:T1", topBody)
                         .setValueInputOption("USER_ENTERED")
                         .setIncludeValuesInResponse(false)
                         .execute();
@@ -200,7 +201,7 @@ public class SheetsWriter {
         //Loop through team list
         for(Team t : event.getTeamList()) {
             //Initialize array for inputting data
-            String[] valuesArr = new String[19];
+            String[] valuesArr = new String[20];
             //Build array with proper data
             buildValues(valuesArr, t);
             //Add to list
@@ -214,7 +215,7 @@ public class SheetsWriter {
         ValueRange body = new ValueRange()
                 .setValues(inputValues);
         //Configure write-range
-        String customRange = String.format("Sheet1!A2:S%d", (teamCount + 2));
+        String customRange = String.format("Sheet1!A2:T%d", (teamCount + 2));
         //Execute write request
         sheetsService.spreadsheets().values()
                 .update(spreadsheetId, customRange, body)
@@ -494,6 +495,7 @@ public class SheetsWriter {
      * 			<li>avgSkills_combined</li>
      * 			<li>avgMaxScore</li>
      * 			<li>totalEvents</li>
+     * 			<li>awards</li>
      * 		</ol>
      * </ul>
      *
@@ -526,6 +528,19 @@ public class SheetsWriter {
         arr[17] = t.fieldIndicators.get("max_score") ? Integer.toString(t.getAvgMaxScore()) : ntFnd;
         //Subtract one since getNumEvents() includes the current event
         arr[18] = Integer.toString((t.getNumEvents() - 1));
+        //Build string for displaying awards
+        //Initialize output string
+        String awardStr = "";
+        //Iterate through award name count pair map
+        for (Map.Entry<String, Integer> entry : t.getAwardNameCountPair().entrySet()) {
+        	String awardName = entry.getKey();
+        	Integer awardNum = entry.getValue();
+        	awardStr += awardName + " x" + awardNum + "\n";
+        }
+        if(awardStr.length() != 0) {
+        	awardStr = awardStr.substring(0, awardStr.length() - 1);
+        }
+        arr[19] = awardStr;
     }
 
     /**
@@ -554,5 +569,6 @@ public class SheetsWriter {
         a[16] = "Average Skills Score(Combined)";
         a[17] = "Average Max Score";
         a[18] = "Previous Events";
+        a[19] = "Awards";
     }
 }
