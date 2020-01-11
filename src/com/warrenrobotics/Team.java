@@ -40,7 +40,7 @@ import java.nio.charset.Charset;
  * The {@link TeamBuilder} class is responsible for building a Team object.
  * </p>
  * @author Robert Engle 
- * @version v2.2.0-beta.2
+ * @version v0.3.1-beta.1
  * @since 2018-02-21
  */
 
@@ -53,19 +53,20 @@ public class Team {
 	private JSONArray tData_rankings;
 	private JSONObject tData_events;
 	private JSONArray tData_season_rankings;
+	private JSONArray tData_awards;
 	private JSONArray tData_skills;
 	//Data - Teams
 	private String number; //IE: 90241B
 	private String teamName; //IE: Warren WarBots II
 	private String teamOrg;
 	private String teamLocation;
-	private String teamLink;
 	//Data - Rankings
 	private double avgOPR;
 	private double avgDPR;
 	private double avgCCWM;
 	private int avgMaxScore;
 	private int avgRank;
+	private int avgWP;
 	private int avgAP;
 	private int avgSP;
 	private int avgTRSP;
@@ -77,6 +78,8 @@ public class Team {
 	*/
 	private int vrating_rank;
 	private double vrating;
+	//Data - Awards
+	private Map<String, Integer> awardNameCountPair = new HashMap<>();
 	//Data - Skills
 	private int avgSkillsScore_robot;
 	private int avgSkillsScore_auton;
@@ -90,6 +93,7 @@ public class Team {
 		fieldIndicators.put("ccwm", true);
 		fieldIndicators.put("max_score", true);
 		fieldIndicators.put("rank", true);
+		fieldIndicators.put("wp", true);
 		fieldIndicators.put("ap", true);
 		fieldIndicators.put("sp", true);
 		fieldIndicators.put("trsp", true);
@@ -98,6 +102,7 @@ public class Team {
 		fieldIndicators.put("skills_combined", true);
 		fieldIndicators.put("vrating_rank", true);
 		fieldIndicators.put("vrating", true);
+		fieldIndicators.put("awards", true);
 	}
 
 	/**
@@ -112,12 +117,14 @@ public class Team {
 		this.tData_rankings = tb.tData_rankings;
 		this.tData_events = tb.tData_events;
 		this.tData_season_rankings = tb.tData_season_rankings;
+		this.tData_awards = tb.tData_awards;
 		this.tData_skills = tb.tData_skills;
 		//Perform calculations
 		performCalculations_teams();
 		performCalculations_rankings();
 		performCalculations_events();
 		performCalculations_season_rankings();
+		performCalculations_awards();
 		performCalculations_skills();
 	}
 
@@ -136,8 +143,6 @@ public class Team {
 				String.format("%s, %s, %s", result.getString("city"), result.getString("region"), result.getString("country"))
 				:
 				String.format("%s, %s", result.getString("city"), result.getString("country"));	
-		//Format link correctly
-		this.teamLink = String.format("https://vexdb.io/teams/view/%s", this.number);
 	}
 
 	/**
@@ -149,6 +154,7 @@ public class Team {
 		calculateAvgCCWM();
 		calculateAvgMaxScore();
 		calculateRanks();
+		calculateAvgWP();
 		calculateAvgAP();
 		calculateAvgSP();
 		calculateAvgTRSP();
@@ -169,6 +175,13 @@ public class Team {
 		setvrating();
 	}
 
+	/**
+	 * Performs all calculations under the "awards" category
+	 */
+	private void performCalculations_awards() {
+		calculateAwards();
+	}
+	
 	/**
 	 * Performs all calculations under the "skills" category
 	 */
@@ -266,6 +279,33 @@ public class Team {
 			fieldIndicators.put("ccwm", false);
 			//If zero, set to 0
 			this.avgCCWM = 0.0;
+		}
+	}
+	
+	/**
+	 * Calculates the average win points (WP) and sets the classes instance variable to it
+	 */
+	private void calculateAvgWP() {
+		//Initialize total for average
+		double totalWP = 0.0;
+		//Break up array, and search for DPR in each part
+		for(int i = 0; i < tData_rankings.length(); i++) {
+			//Grab value
+			double wp = tData_rankings.getJSONObject(i).getDouble("wp");
+			//Add to total
+			totalWP += wp;
+		}
+		//Avoid ArithmeticException by checking if divisor is 0
+		if(tData_rankings.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("wp", true);
+			//If nonzero, set to appropriate value
+			this.avgWP = (int)(totalWP + 0.0) / tData_rankings.length();
+		}else {
+			//Add indicator
+			fieldIndicators.put("wp", false);
+			//If zero, set to 0
+			this.avgWP = 0;
 		}
 	}
 
@@ -473,7 +513,43 @@ public class Team {
 		}
 
 	}
-
+	
+	/*
+	------------------------------------------------------------------------------------------
+	//																						//
+	//								   AWARDS CALCULATIONS								    //
+	//																						//
+	------------------------------------------------------------------------------------------
+	*/
+	private void calculateAwards() {
+		//Check if length of array is nonzero(if zero, trying to grab awards will throw JSONException)
+		if(tData_awards.length() != 0) {
+			//Add indicator
+			fieldIndicators.put("awards", true);
+			//Set properly
+			for(int i = 0; i < tData_awards.length(); i++) {
+				//Get JSON object for current award
+				JSONObject curAward = tData_awards.getJSONObject(i);
+				//Declare suffix to be removed from string
+				final String SUFFIX = "(VRC/VEXU)";
+				//Format the string so it only contains the award name
+				String awardName = curAward.getString("name").replace(SUFFIX, "");
+				//Check if the award isn't already in the award name count pair hashmap
+				if(!awardNameCountPair.containsKey(awardName)) {
+					//If the award does not already exist, put it in the map with an initial value of 1
+					awardNameCountPair.put(awardName, 1);
+				}else {
+					//If the award already exists, get the current count and put it in the map with an the current count plus one.
+					int numCount = awardNameCountPair.get(awardName);
+					awardNameCountPair.put(awardName, (numCount + 1));
+				}
+			}
+		}else {
+			//Add indicator
+			fieldIndicators.put("awards", false);
+		}
+	}
+	
 	/*
 	------------------------------------------------------------------------------------------
 	//																						//
@@ -612,13 +688,6 @@ public class Team {
 	public String getTeamLocation() { return this.teamLocation; }
 
 	/**
-	 * Retrieves the current team VexDB link
-	 *
-	 * @return the VexDB.io link for the team
-	 */
-	public String getTeamLink() { return this.teamLink; }
-
-	/**
 	 * Retrieves the average OPR for select team(average of all matches in season)
 	 *
 	 * @return the average OPR of the team
@@ -654,6 +723,13 @@ public class Team {
 	public int getAvgRank() { return avgRank; }
 
 	/**
+	 * Retrieves average win points for a team
+	 * 
+	 * @return a rounded-down integer of the average autonomous points
+	 */
+	public int getAvgWP() { return this.avgWP; }
+	
+	/**
 	 * Retrieves average autonomous points for a team
 	 *
 	 * @return a rounded-down integer of the average autonomous points
@@ -688,6 +764,13 @@ public class Team {
 	 */
 	public double getvrating() { return this.vrating; }
 
+	/**
+	 * Retrieves the award name count pair map of the team
+	 * 
+	 * @return the award name count pair map
+	 */
+	public Map<String, Integer> getAwardNameCountPair(){ return this.awardNameCountPair; }
+	
 	/**
 	 * Retrieves the average skills score for autonomous mode
 	 *
@@ -746,6 +829,7 @@ public class Team {
 		public JSONArray tData_rankings;
 		public JSONObject tData_events;
 		public JSONArray tData_season_rankings;
+		public JSONArray tData_awards;
 		public JSONArray tData_skills;
 
 		/**
@@ -833,6 +917,19 @@ public class Team {
 			return this;
 		}
 
+		
+		public TeamBuilder setAwardsData() throws JSONException, IOException {
+			//URL-Escape the season
+			String formattedSeason = this.season.replace(" ", "%20");
+			//Construct link for lookup
+			String str_awards = String.format("https://api.vexdb.io/v1/get_awards?team=%s&season=%s", this.teamNumber, formattedSeason);
+			//Create JSON object
+			JSONObject tObject_awards = readJsonFromUrl(str_awards);
+			//Create respective array
+			this.tData_awards = tObject_awards.getJSONArray("result");
+			return this;
+		}
+		
 		/**
 		 * Sets the Skills data by getting JSON data from the Vecdb.io API
 		 * 
@@ -861,6 +958,7 @@ public class Team {
 		 * 		<li>setRankingData</li>
 		 * 		<li>setEventData</li>
 		 * 		<li>setSeasonData</li>
+		 * 		<li>setAwardsData</li>
 		 * 		<li>setSkillsData</li>
 		 * </ul>
 		 * </p>

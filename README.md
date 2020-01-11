@@ -43,7 +43,7 @@ The following is a list of the data that is included in each Google Sheet:
 * Average Skills Score (Autonomous): The autonomous skills score is the score of a team's autonomous run in a skills match. The average skills score for 	autonomous is the average of a team's autonomous skills score across all skills matches in all tournaments they competed at.
 * Average Skills Score (Robot): The robot skills score is the score of a team's driver-controlled run in a skills match. The average skills score for robot 	is the average of a team's robot skills score across all skills matches in all tournaments they competed at.
 * Average Skills Score (Combined): The combined skills score is the combined score of a team's autonomous and robot run in a skills match. The average 	combined skills score is the average of a team's combined skills score across all skills matches in all tournaments they competed at.
-* Average Max Score: The max score is the maximum score that a team has achieved during a single tournament. The avergae max score is the average of a team's 	max score's from all the tournaments they competed at.
+* Average Max Score: The max score is the maximum score that a team has achieved during a single tournament. The average max score is the average of a team's 	max score's from all the tournaments they competed at.
 * Previous Events: The number of previous events that the team has competed at in the current season.
 
 ### Setting up
@@ -65,7 +65,9 @@ To run the program, proper OAuth credentials must be placed into the same direct
 
 ## Authors
 
-* **Robert Engle** - *Creator* - [Wup123102](https://github.com/Wup123102)
+* **Robert Engle** - *Creator & Lead Developer* - [Wup123102](https://github.com/Wup123102)
+
+* **Ivan Wick** - *Contributor* - [ivanwick](https://github.com/ivanwick)
 
 ## Worlds Events Sheets
 
