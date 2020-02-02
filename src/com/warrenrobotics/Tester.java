@@ -1,7 +1,9 @@
-package com.warrenrobotics;
+ package com.warrenrobotics;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import javax.swing.JOptionPane;
 
 public class Tester {
 	public static void main(String[] args) throws Exception{
@@ -12,7 +14,9 @@ public class Tester {
 		// String defaultLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-1124.html";
 		String defaultLink = "https://www.robotevents.com/robot-competitions/vex-robotics-competition/RE-VRC-19-0201.html"; //Random for test
 		//If args isn't empty, use those. Otherwise, default values
-		String eventLink = args.length != 0 ? args[0] : defaultLink;
+		String promptLink = JOptionPane.showInputDialog("Enter RobotEvents URL");
+		
+		String eventLink = promptLink != null ? promptLink : defaultLink;
 
 		System.out.printf("%s - Running Program%n", new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date()));
 
